@@ -35,12 +35,11 @@ const bot = new TelegramBot(BOT_TOKEN, {
 let bananaGunCount = 0;
 let mastroCount = 0;
 
-bot.getChat('@new_sniper_chanel')
+bot.getChat('@HardSnipe')
   .then(chat => {
     const channelId = chat.id; 
-    chat.title = "hello"
+    console.log(channelId,'33333333');
   });
-
 
 bot.setChatTitle(channelId,"Hard Snipe Alert Bot 🎯")
 
@@ -186,29 +185,77 @@ const getTokenInfos = async (tokenAddress, callback) => {
     // setTimeout(async () => {
     // let response;
     const apiKey = "cqt_rQfBvGFQfc4vy9wmGTJqHVF4KfPH";
-    const url = `https://api.covalenthq.com/v1/pricing/historical_by_addresses_v2/eth-mainnet/usd/${tokenAddress}/`
-    const url2 = `https://api.covalenthq.com/v1/eth-mainnet/tokens/${tokenAddress}/token_holders_v2/`
+    const url = `https://api.dexscreener.com/latest/dex/tokens/${tokenAddress}`
+
+    var query = `
+    query{
+        EVM(dataset: combined, network: eth) {
+          burn: Transfers(
+            where: {Transfer: {Currency: {SmartContract: {is: "${tokenAddress}"}}, Receiver: {is: "0x0000000000000000000000000000000000000000"}, Amount: {gt: "0"}}}
+          ) {
+            sum(of: Transfer_Amount)
+          }
+          mint: Transfers(
+            where: {Transfer: {Currency: {SmartContract: {is: "${tokenAddress}"}}, Sender: {is: "0x0000000000000000000000000000000000000000"}, Amount: {gt: "0"}}}
+          ) {
+            sum(of: Transfer_Amount)
+          }
+          BalanceUpdates(
+            where: {Currency: {SmartContract: {is: "${tokenAddress}"}}}
+            limit: {count: 1}
+          ) {
+            Currency {
+              Decimals
+              Name
+              Symbol
+              ProtocolName
+              SmartContract
+              HasURI
+              Fungible
+            }
+            ChainId
+          }
+        }
+      }
+    `;
+    var data = JSON.stringify({query});
+
+    var config = {
+        method: 'post',
+        url: 'https://streaming.bitquery.io/graphql',
+        headers: { 
+            'Content-Type': 'application/json', 
+            'X-API-KEY': 'BQYUWG8NvrMJ96Qmuqjq6mPLLPFG48Dr'
+        },
+        data : data
+    };
     axios.all([
-        axios.get(url, {
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${apiKey}`
-            }
-        }),
-        axios.get(url2, {
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${apiKey}`
-            }
-        })
+        axios.get(url),
+        axios(config)
     ]).then(axios.spread((res1, res2) => {
         return callback(res1.data, res2.data);
     }))
-        .catch(error => {
-            // console.log(error, '333333333333333');
-            return callback(false);
-        })
+    .catch(error => {
+        // console.log(error, '333333333333333');
+        return callback(false);
+    })
 }
+
+// (async()=>{
+//     await getTokenInfos("0x14f6d9bdd60b47948d31b088cfc35e862a8d2f0a", async function (result, result2) {
+//         const pairs = result?result?.pairs[0] : {priceUsd:0,liquidity:{usd:0},volume:{h24:0}};
+//         const tokenPrice = pairs?.priceUsd;
+//         const tokenLq = pairs?.liquidity?.usd;
+//         const tokenVolumn = pairs?.volume?.h24;
+//         const totalSupply  = result2?.data?.EVM?.mint[0]?.sum || 0
+//         const decimals  = result2?.data?.EVM?.BalanceUpdates[0]?.Currency?.Decimals || 0
+//         const marketCap = parseInt(totalSupply)*parseFloat(tokenPrice);
+//     })
+// })()
+
+
+
+
 
 const checkPair = (pair) => {
     for (var i = 0; i < pairsList.length; i++) {
@@ -283,9 +330,15 @@ const tokenTxPerMins = async(tokenAddress,date)=>{
                 const mastroCount = groupedData.filter(data=> data?.Transaction?.To?.toLowerCase() === mastroRouter).length;
                   console.log(groupedData,groupedData.length,bananaCount,mastroCount,'--');
                 await getTokenInfos(tokenAddress, async function (result, result2) {
-
+                    
+                    const pairs = result?result?.pairs[0] : {priceUsd:0,liquidity:{usd:0},volume:{h24:0}};
+                    const tokenPrice = pairs?.priceUsd || 0;
+                    const tokenLq = pairs?.liquidity?.usd || 0;
+                    const tokenVolumn = pairs?.volume?.h24 || 0;
+                    const totalSupply  = result2?.data?.EVM?.mint[0]?.sum || 0
+                    const decimals  = result2?.data?.EVM?.BalanceUpdates[0]?.Currency?.Decimals || 0
+                    const marketCap = parseInt(totalSupply)*parseFloat(tokenPrice);
                     if(bananaCount + mastroCount >= 10){
-                    console.log(result.data[0].items,'2222');
                     const symbol = result.data[0]?.contract_ticker_symbol;
                     
                     const keyboard = [
@@ -299,17 +352,16 @@ const tokenTxPerMins = async(tokenAddress,date)=>{
         \n🎯 Hard Sniped Alert
         
     🪙 ${symbol} <a href="etherscan.io/token/${tokenAddress}">${symbol}</a>
-    💰Total Supply:<code>1000000000 (18 decimals)</code>
+    💰Total Supply:<code>${totalSupply} (${decimals} decimals)</code>
     
     🫧 Socials: No link available
-    From :${startTimeStamp.toISOString()} ~ To: ${endTimeStamp.toISOString()}
     🌀 Hard Sniped ${bananaCount+mastroCount} times in less than 20 secs
     
     🍌Banana: ${bananaCount}
     🤖Mastro: ${mastroCount}
-    📈 Volume: $0
-    💰 Mcap: $0
-    💧 Liquidity: $0
+    📈 Volume: $${tokenVolumn}
+    💰 Mcap: $${marketCap}
+    💧 Liquidity: $${tokenLq}
     
     CA: <code>${tokenAddress}</code>
         `,{
