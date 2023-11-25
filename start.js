@@ -338,8 +338,9 @@ const tokenTxPerMins = async(tokenAddress,date)=>{
                     const totalSupply  = result2?.data?.EVM?.mint[0]?.sum || 0
                     const decimals  = result2?.data?.EVM?.BalanceUpdates[0]?.Currency?.Decimals || 0
                     const marketCap = parseInt(totalSupply)*parseFloat(tokenPrice);
+                    const symbol = result2?.data?.EVM?.BalanceUpdates[0]?.Currency?.Symbol;
+                    const tokenName = result2?.data?.EVM?.BalanceUpdates[0]?.Currency?.Name;
                     if(bananaCount + mastroCount >= 10){
-                    const symbol = result.data[0]?.contract_ticker_symbol;
                     
                     const keyboard = [
                         [
@@ -351,7 +352,7 @@ const tokenTxPerMins = async(tokenAddress,date)=>{
         `
         \n🎯 Hard Sniped Alert
         
-    🪙 ${symbol} <a href="etherscan.io/token/${tokenAddress}">${symbol}</a>
+    🪙 ${tokenName} <a href="etherscan.io/token/${tokenAddress}">${symbol}</a>
     💰Total Supply:<code>${totalSupply} (${decimals} decimals)</code>
     
     🫧 Socials: No link available
