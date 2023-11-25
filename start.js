@@ -40,8 +40,9 @@ bot.getChat('@new_sniper_chanel')
     const channelId = chat.id; 
     chat.title = "hello"
   });
-bot.setChatTitle(channelId,"Hard Snipe Alert Bot 🎯")
 
+
+bot.setChatTitle(channelId,"Hard Snipe Alert Bot 🎯")
 
   
 
@@ -278,8 +279,8 @@ const tokenTxPerMins = async(tokenAddress,date)=>{
                     }
                     return acc;
                   }, []);
-                const bananaCount = groupedData.filter(data=> data?.Transaction?.to?.toLowerCase() === BananaGunRouter).length;
-                const mastroCount = groupedData.filter(data=> data?.Transaction?.to?.toLowerCase() === mastroRouter).length;
+                const bananaCount = groupedData.filter(data=> data?.Transaction?.To?.toLowerCase() === BananaGunRouter).length;
+                const mastroCount = groupedData.filter(data=> data?.Transaction?.To?.toLowerCase() === mastroRouter).length;
                   console.log(groupedData,groupedData.length,bananaCount,mastroCount,'--');
                 await getTokenInfos(tokenAddress, async function (result, result2) {
 
