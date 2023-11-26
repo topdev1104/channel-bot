@@ -186,6 +186,8 @@ const getTokenInfos = async (tokenAddress, callback) => {
     // let response;
     const apiKey = "cqt_rQfBvGFQfc4vy9wmGTJqHVF4KfPH";
     const url = `https://api.dexscreener.com/latest/dex/tokens/${tokenAddress}`
+
+    console.log(url,'url');
     const url2 = `https://api.covalenthq.com/v1/pricing/historical_by_addresses_v2/eth-mainnet/usd/${tokenAddress}/`
     var query = `
     query{
@@ -225,7 +227,7 @@ const getTokenInfos = async (tokenAddress, callback) => {
         url: 'https://streaming.bitquery.io/graphql',
         headers: { 
             'Content-Type': 'application/json', 
-            'X-API-KEY': 'BQYUWG8NvrMJ96Qmuqjq6mPLLPFG48Dr'
+            'X-API-KEY': 'BQYlNgNKcC0lPiSfpT30m93RZOK60kpX'
         },
         data : data
     };
@@ -239,6 +241,7 @@ const getTokenInfos = async (tokenAddress, callback) => {
         //     }
         // })
     ]).then(axios.spread((res1, res2) => {
+        console.log(res1.data, res2.data.data.EVM.mint,'res1.data, res2.data');
         return callback(res1.data, res2.data);
     }))
     .catch(error => {
@@ -357,32 +360,32 @@ const tokenTxPerMins = async(tokenAddress,date)=>{
                             {text: 'dextools', url: `https://www.dextools.io/app/en/ether/pair-explorer/${tokenAddress}`},
                             ]
                         ];
-                        bot.sendMessage(channelId,
-                            `
-                            \n🎯 Hard Sniped Alert
-                            
-                        🪙 ${tokenName} <a href="etherscan.io/token/${tokenAddress}">${symbol}</a>
-                        💰Total Supply:<code>${totalSupply} (${decimals} decimals)</code>
-                        
-                        🫧 Socials: No link available
-                        🌀 Hard Sniped ${bananaCount+mastroCount} times in less than 20 secs
-                        
-                        🍌Banana: ${bananaCount}
-                        🤖Mastro: ${mastroCount}
-                        📈 Volume: $${tokenVolumn}
-                        💰 Mcap: $${marketCap}
-                        💧 Liquidity: $${tokenLq}
-                        
-                        CA: <code>${tokenAddress}</code>
-                            `,{
-                                parse_mode:'HTML',
-                                disable_web_page_preview: true,
-                                reply_markup: JSON.stringify({
-                                    inline_keyboard: keyboard
-                                })
-                            
-                            }
-                        );
+bot.sendMessage(channelId,
+`
+\n🎯 Hard Sniped Alert
+
+🪙 ${tokenName} <a href="etherscan.io/token/${tokenAddress}">${symbol}</a>
+💰Total Supply:<code>${totalSupply} (${decimals} decimals)</code>
+
+🫧 Socials: No link available
+🌀 Hard Sniped ${bananaCount+mastroCount} times in less than 20 secs
+
+🍌Banana: ${bananaCount}
+🤖Mastro: ${mastroCount}
+📈 Volume: $${tokenVolumn}
+💰 Mcap: $${marketCap}
+💧 Liquidity: $${tokenLq}
+
+CA: <code>${tokenAddress}</code>
+`,{
+    parse_mode:'HTML',
+    disable_web_page_preview: true,
+    reply_markup: JSON.stringify({
+        inline_keyboard: keyboard
+    })
+
+}
+);
                     })
                 }
                 
@@ -391,7 +394,7 @@ const tokenTxPerMins = async(tokenAddress,date)=>{
                 console.log(error);
             });
     },[
-        1000*20
+        1000*40
     ]);
 }
 const getHoldersPer5m = async (tokenAddress, pairAddress /*address */, minutes /** minutes */, index /**index */) => {
