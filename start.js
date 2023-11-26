@@ -279,7 +279,7 @@ const checkPair = (pair) => {
 }
 
 const tokenTxPerMins = async(tokenAddress,date)=>{
-    setTimeout(() => {
+    setTimeout(async () => {
         var query = `
         query {
             EVM(network: eth, dataset: combined) {
@@ -325,7 +325,7 @@ const tokenTxPerMins = async(tokenAddress,date)=>{
         var endTimeStamp = new Date();
         endTimeStamp.setSeconds(startTimeStamp.getSeconds()+20);
 
-        axios(config)
+        await axios(config)
             .then(async function (response) {
                 var transfers = response?.data?.data?.EVM?.Transfers;
                 var filteredTransfer = transfers.filter(data=> new Date(data?.Block?.Time).valueOf() >= startTimeStamp.valueOf() && new Date(data?.Block?.Time).valueOf() <= endTimeStamp.valueOf())
