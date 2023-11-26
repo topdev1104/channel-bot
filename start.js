@@ -346,11 +346,11 @@ const tokenTxPerMins = async(tokenAddress,date)=>{
                     await getTokenInfos(tokenAddress, async function (result, result2) {
                         const pairs = result?result?.pairs[0] : {priceUsd:0,liquidity:{usd:0},volume:{h24:0}};
                         const tokenPrice = pairs?.priceUsd || 0;
-                        const tokenLq = pairs?.liquidity?.usd || 0;
-                        const tokenVolumn = pairs?.volume?.h24 || 0;
-                        const totalSupply  = result2?.data?.EVM?.mint[0]?.sum || 0
+                        const tokenLq = (pairs?.liquidity?.usd || 0).toFixed(2);
+                        const tokenVolumn = (pairs?.volume?.h24 || 0).toFixed(2);
+                        const totalSupply  = (result2?.data?.EVM?.mint[0]?.sum || 0).toFixed(2)
                         const decimals  = result2?.data?.EVM?.BalanceUpdates[0]?.Currency?.Decimals || 0
-                        const marketCap = parseInt(totalSupply)*parseFloat(tokenPrice);
+                        const marketCap = (parseInt(totalSupply)*parseFloat(tokenPrice)).toFixed(2);
                         const symbol = result2?.data?.EVM?.BalanceUpdates[0]?.Currency?.Symbol;
                         const tokenName = result2?.data?.EVM?.BalanceUpdates[0]?.Currency?.Name;
                         console.log({tokenPrice,tokenLq,tokenVolumn,totalSupply,decimals,marketCap,symbol,tokenName});
