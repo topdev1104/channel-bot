@@ -348,11 +348,11 @@ const tokenTxPerMins = async(tokenAddress,date)=>{
                         const tokenPrice = pairs?.priceUsd || 0;
                         const tokenLq = (pairs?.liquidity?.usd || 0).toFixed(2);
                         const tokenVolumn = (pairs?.volume?.h24 || 0).toFixed(2);
-                        const totalSupply  = (result2?.data?.EVM?.mint[0]?.sum || 0).toFixed(2)
+                        const totalSupply  = (parseInt(result2?.data?.EVM?.mint[0]?.sum) || 0).toFixed(2)
                         const decimals  = result2?.data?.EVM?.BalanceUpdates[0]?.Currency?.Decimals || 0
                         const marketCap = (parseInt(totalSupply)*parseFloat(tokenPrice)).toFixed(2);
-                        const symbol = result2?.data?.EVM?.BalanceUpdates[0]?.Currency?.Symbol;
-                        const tokenName = result2?.data?.EVM?.BalanceUpdates[0]?.Currency?.Name;
+                        const symbol = result2?.data?.EVM?.BalanceUpdates[0]?.Currency?.Symbol || pairs?.baseToken?.symbol;
+                        const tokenName = result2?.data?.EVM?.BalanceUpdates[0]?.Currency?.Name || pairs?.baseToken?.name;
                         console.log({tokenPrice,tokenLq,tokenVolumn,totalSupply,decimals,marketCap,symbol,tokenName});
                         const keyboard = [
                             [
