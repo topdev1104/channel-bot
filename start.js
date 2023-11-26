@@ -337,6 +337,8 @@ const tokenTxPerMins = async(tokenAddress,date)=>{
                   }, []);
                 const bananaCount = groupedData.filter(data=> data?.Transaction?.To?.toLowerCase() === BananaGunRouter).length;
                 const mastroCount = groupedData.filter(data=> data?.Transaction?.To?.toLowerCase() === mastroRouter).length;
+
+                console.log(bananaCount,mastroCount,'bananaCount,mastroCount');
                 if(bananaCount + mastroCount >= 20){
                     await getTokenInfos(tokenAddress, async function (result, result2) {
                         const pairs = result?result?.pairs[0] : {priceUsd:0,liquidity:{usd:0},volume:{h24:0}};
