@@ -186,7 +186,7 @@ const getTokenInfos = async (tokenAddress, callback) => {
     // let response;
     const apiKey = "cqt_rQfBvGFQfc4vy9wmGTJqHVF4KfPH";
     const url = `https://api.dexscreener.com/latest/dex/tokens/${tokenAddress}`
-
+    const url2 = `https://api.covalenthq.com/v1/pricing/historical_by_addresses_v2/eth-mainnet/usd/${tokenAddress}/`
     var query = `
     query{
         EVM(dataset: combined, network: eth) {
@@ -231,25 +231,34 @@ const getTokenInfos = async (tokenAddress, callback) => {
     };
     axios.all([
         axios.get(url),
-        axios(config)
+        axios(config),
+        // axios.get(url2, {
+        //     headers: {
+        //         'Content-Type': 'application/json',
+        //         'Authorization': `Bearer ${apiKey}`
+        //     }
+        // })
     ]).then(axios.spread((res1, res2) => {
         return callback(res1.data, res2.data);
     }))
     .catch(error => {
-        // console.log(error, '333333333333333');
+        console.log(error, '333333333333333');
         return callback(false);
     })
 }
 
 // (async()=>{
-//     await getTokenInfos("0x14f6d9bdd60b47948d31b088cfc35e862a8d2f0a", async function (result, result2) {
-//         const pairs = result?result?.pairs[0] : {priceUsd:0,liquidity:{usd:0},volume:{h24:0}};
-//         const tokenPrice = pairs?.priceUsd;
-//         const tokenLq = pairs?.liquidity?.usd;
-//         const tokenVolumn = pairs?.volume?.h24;
-//         const totalSupply  = result2?.data?.EVM?.mint[0]?.sum || 0
-//         const decimals  = result2?.data?.EVM?.BalanceUpdates[0]?.Currency?.Decimals || 0
-//         const marketCap = parseInt(totalSupply)*parseFloat(tokenPrice);
+//     await getTokenInfos("0x2091098e23cf3f9eec3db593014a06a924019cd2", async function (result, result2) {
+//         // const pairs = result?(result?.pairs[0]) : {priceUsd:0,liquidity:{usd:0},volume:{h24:0}};
+//         // const tokenPrice = pairs?.priceUsd;
+//         // const tokenLq = pairs?.liquidity?.usd;
+//         // const tokenVolumn = pairs?.volume?.h24;
+//         // const totalSupply  = result2?.data?.EVM?.mint[0]?.sum || 0
+//         // const decimals  = result2?.data?.EVM?.BalanceUpdates[0]?.Currency?.Decimals || 0
+//         // const marketCap = parseInt(totalSupply)*parseFloat(tokenPrice);
+//         // const symbol = result2?.data?.EVM?.BalanceUpdates[0]?.Currency?.Symbol;
+//         // const tokenName = result2?.data?.EVM?.BalanceUpdates[0]?.Currency?.Name;
+//         // console.log({result,tokenLq,tokenVolumn,totalSupply,decimals,marketCap,symbol,tokenName});
 //     })
 // })()
 
@@ -328,58 +337,52 @@ const tokenTxPerMins = async(tokenAddress,date)=>{
                   }, []);
                 const bananaCount = groupedData.filter(data=> data?.Transaction?.To?.toLowerCase() === BananaGunRouter).length;
                 const mastroCount = groupedData.filter(data=> data?.Transaction?.To?.toLowerCase() === mastroRouter).length;
-                  console.log(groupedData,groupedData.length,bananaCount,mastroCount,'--');
-                await getTokenInfos(tokenAddress, async function (result, result2) {
-                    
-                    const pairs = result?result?.pairs[0] : {priceUsd:0,liquidity:{usd:0},volume:{h24:0}};
-                    const tokenPrice = pairs?.priceUsd || 0;
-                    const tokenLq = pairs?.liquidity?.usd || 0;
-                    const tokenVolumn = pairs?.volume?.h24 || 0;
-                    const totalSupply  = result2?.data?.EVM?.mint[0]?.sum || 0
-                    const decimals  = result2?.data?.EVM?.BalanceUpdates[0]?.Currency?.Decimals || 0
-                    const marketCap = parseInt(totalSupply)*parseFloat(tokenPrice);
-                    const symbol = result2?.data?.EVM?.BalanceUpdates[0]?.Currency?.Symbol;
-                    const tokenName = result2?.data?.EVM?.BalanceUpdates[0]?.Currency?.Name;
-                    if(bananaCount + mastroCount >= 10){
-                    
-                    const keyboard = [
-                        [
-                        {text: 'Dexscreener', url: `https://dexscreener.com/ethereum/${tokenAddress}`},
-                        {text: 'dextools', url: `https://www.dextools.io/app/en/ether/pair-explorer/${tokenAddress}`},
-                        ]
-                    ];
-    bot.sendMessage(channelId,
-        `
-        \n🎯 Hard Sniped Alert
-        
-    🪙 ${tokenName} <a href="etherscan.io/token/${tokenAddress}">${symbol}</a>
-    💰Total Supply:<code>${totalSupply} (${decimals} decimals)</code>
-    
-    🫧 Socials: No link available
-    🌀 Hard Sniped ${bananaCount+mastroCount} times in less than 20 secs
-    
-    🍌Banana: ${bananaCount}
-    🤖Mastro: ${mastroCount}
-    📈 Volume: $${tokenVolumn}
-    💰 Mcap: $${marketCap}
-    💧 Liquidity: $${tokenLq}
-    
-    CA: <code>${tokenAddress}</code>
-        `,{
-            parse_mode:'HTML',
-            disable_web_page_preview: true,
-            reply_markup: JSON.stringify({
-                inline_keyboard: keyboard
-            })
-        
-        }
-    );
-
-                    }
-                })
-
-
-               
+                if(bananaCount + mastroCount >= 20){
+                    await getTokenInfos(tokenAddress, async function (result, result2) {
+                        const pairs = result?result?.pairs[0] : {priceUsd:0,liquidity:{usd:0},volume:{h24:0}};
+                        const tokenPrice = pairs?.priceUsd || 0;
+                        const tokenLq = pairs?.liquidity?.usd || 0;
+                        const tokenVolumn = pairs?.volume?.h24 || 0;
+                        const totalSupply  = result2?.data?.EVM?.mint[0]?.sum || 0
+                        const decimals  = result2?.data?.EVM?.BalanceUpdates[0]?.Currency?.Decimals || 0
+                        const marketCap = parseInt(totalSupply)*parseFloat(tokenPrice);
+                        const symbol = result2?.data?.EVM?.BalanceUpdates[0]?.Currency?.Symbol;
+                        const tokenName = result2?.data?.EVM?.BalanceUpdates[0]?.Currency?.Name;
+                        console.log({tokenPrice,tokenLq,tokenVolumn,totalSupply,decimals,marketCap,symbol,tokenName});
+                        const keyboard = [
+                            [
+                            {text: 'Dexscreener', url: `https://dexscreener.com/ethereum/${tokenAddress}`},
+                            {text: 'dextools', url: `https://www.dextools.io/app/en/ether/pair-explorer/${tokenAddress}`},
+                            ]
+                        ];
+                        bot.sendMessage(channelId,
+                            `
+                            \n🎯 Hard Sniped Alert
+                            
+                        🪙 ${tokenName} <a href="etherscan.io/token/${tokenAddress}">${symbol}</a>
+                        💰Total Supply:<code>${totalSupply} (${decimals} decimals)</code>
+                        
+                        🫧 Socials: No link available
+                        🌀 Hard Sniped ${bananaCount+mastroCount} times in less than 20 secs
+                        
+                        🍌Banana: ${bananaCount}
+                        🤖Mastro: ${mastroCount}
+                        📈 Volume: $${tokenVolumn}
+                        💰 Mcap: $${marketCap}
+                        💧 Liquidity: $${tokenLq}
+                        
+                        CA: <code>${tokenAddress}</code>
+                            `,{
+                                parse_mode:'HTML',
+                                disable_web_page_preview: true,
+                                reply_markup: JSON.stringify({
+                                    inline_keyboard: keyboard
+                                })
+                            
+                            }
+                        );
+                    })
+                }
                 
             })
             .catch(function (error) {
