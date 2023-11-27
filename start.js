@@ -187,62 +187,31 @@ const getTokenInfos = async (tokenAddress, callback) => {
     const apiKey = "cqt_rQfBvGFQfc4vy9wmGTJqHVF4KfPH";
     const url = `https://api.dexscreener.com/latest/dex/tokens/${tokenAddress}`
 
-    console.log(url,'url');
-    const url2 = `https://api.covalenthq.com/v1/pricing/historical_by_addresses_v2/eth-mainnet/usd/${tokenAddress}/`
-    var query = `
-    query{
-        EVM(dataset: combined, network: eth) {
-          burn: Transfers(
-            where: {Transfer: {Currency: {SmartContract: {is: "${tokenAddress}"}}, Receiver: {is: "0x0000000000000000000000000000000000000000"}, Amount: {gt: "0"}}}
-          ) {
-            sum(of: Transfer_Amount)
-          }
-          mint: Transfers(
-            where: {Transfer: {Currency: {SmartContract: {is: "${tokenAddress}"}}, Sender: {is: "0x0000000000000000000000000000000000000000"}, Amount: {gt: "0"}}}
-          ) {
-            sum(of: Transfer_Amount)
-          }
-          BalanceUpdates(
-            where: {Currency: {SmartContract: {is: "${tokenAddress}"}}}
-            limit: {count: 1}
-          ) {
-            Currency {
-              Decimals
-              Name
-              Symbol
-              ProtocolName
-              SmartContract
-              HasURI
-              Fungible
-            }
-            ChainId
-          }
-        }
-      }
-    `;
-    var data = JSON.stringify({query});
-
+    const url2 = `https://open-api.dextools.io/free/v2/token/ether/${tokenAddress}`
+    const url3 = `https://open-api.dextools.io/free/v2/token/ether/${tokenAddress}/info`
     var config = {
-        method: 'post',
-        url: 'https://streaming.bitquery.io/graphql',
-        headers: { 
-            'Content-Type': 'application/json', 
-            'X-API-KEY': 'BQYlNgNKcC0lPiSfpT30m93RZOK60kpX'
-        },
-        data : data
+        method: 'GET',
+        headers: {
+            'X-BLOBR-KEY': 'GzIhefgibxjzVesFk75lr09yJLIcIxDv'
+          },
+        url: url2,
     };
+    
+    var config3 = {
+        method: 'GET',
+        headers: {
+            'X-BLOBR-KEY': 'GzIhefgibxjzVesFk75lr09yJLIcIxDv'
+          },
+        url: url3,
+    };
+
     axios.all([
         axios.get(url),
         axios(config),
-        // axios.get(url2, {
-        //     headers: {
-        //         'Content-Type': 'application/json',
-        //         'Authorization': `Bearer ${apiKey}`
-        //     }
-        // })
-    ]).then(axios.spread((res1, res2) => {
-        console.log(res1.data, res2.data.data.EVM,'res1.data, res2.data');
-        return callback(res1.data, res2.data);
+        axios(config3),
+    ]).then(axios.spread((res1, res2,res3) => {
+        console.log(res2.data);
+        return callback(res1.data, res2?.data,res3?.data);
     }))
     .catch(error => {
         console.log(error, '333333333333333');
@@ -285,7 +254,6 @@ const tokenTxPerMins = async(tokenAddress,date)=>{
             EVM(network: eth, dataset: realtime) {
               Transfers(
                 where: {Transfer: {Currency: {SmartContract: {is: "${tokenAddress}"}}}}
-                orderBy: {descending: Block_Time}
               ) {
                 Transfer {
                     Sender
@@ -299,7 +267,6 @@ const tokenTxPerMins = async(tokenAddress,date)=>{
                     }
                 }
                 Block {
-                  Number
                   Time
                 }
                 Transaction {
@@ -333,9 +300,8 @@ const tokenTxPerMins = async(tokenAddress,date)=>{
             .then(async function (response) {
                 var transfers = response?.data?.data?.EVM?.Transfers;
                 var filteredTransfer = transfers.filter(data=> new Date(data?.Block?.Time).valueOf() >= startTimeStamp.valueOf() && new Date(data?.Block?.Time).valueOf() <= endTimeStamp.valueOf())
-                var bananaTrx = {};
                 const firstTransaction = transfers.find(data=> data?.Transfer?.Sender ==="0x0000000000000000000000000000000000000000");
-                console.log(firstTransaction?.Transfer?.Currency,firstTransaction?.Transfer);
+                console.log(firstTransaction,firstTransaction?.Transfer?.Currency,firstTransaction?.Transfer);
                 const _tokenSymbol = firstTransaction?.Transfer?.Currency?.Symbol;
                 const _tokenName = firstTransaction?.Transfer?.Currency?.Name;
                 const _tokenDecimals = firstTransaction?.Transfer?.Currency?.Decimals;
@@ -352,16 +318,27 @@ const tokenTxPerMins = async(tokenAddress,date)=>{
 
                 console.log(bananaCount,mastroCount,'bananaCount,mastroCount');
                 if(bananaCount + mastroCount >= 20){
-                    await getTokenInfos(tokenAddress, async function (result, result2) {
+                    await getTokenInfos(tokenAddress, async function (result, result2,result3) {
+                        const socialLinks = result2?.data?.socialInfo;
+                        var social_links = '';
+                        var social_link_status = false;
+                        for(var _key in socialLinks){
+                            if(socialLinks[_key]){
+                                social_link_status = true;
+                                social_links += `<a href="${socialLinks[_key]}">${_key}</a> | `;
+                            }
+                        }
+
                         const pairs = result?(result?.pairs[0]) : {priceUsd:0,liquidity:{usd:0},volume:{h24:0}};
                         const tokenPrice = pairs?.priceUsd || 0;
                         const tokenLq = (pairs?.liquidity?.usd || 0).toFixed(2);
                         const tokenVolumn = (pairs?.volume?.h24 || 0).toFixed(2);
-                        const totalSupply  = (_tokenSupply || parseInt(result2?.data?.EVM?.mint[0]?.sum) || 0)
-                        const decimals  = _tokenDecimals || result2?.data?.EVM?.BalanceUpdates[0]?.Currency?.Decimals || 0
+                        const totalSupply  = (result3?.data?.totalSupply || _tokenSupply || 0)
+                        const decimals  = _tokenDecimals || 0
                         const marketCap = (parseInt(totalSupply)*parseFloat(tokenPrice)).toFixed(2);
-                        const symbol = _tokenSymbol || result2?.data?.EVM?.BalanceUpdates[0]?.Currency?.Symbol || pairs?.baseToken?.symbol;
-                        const tokenName = _tokenName || result2?.data?.EVM?.BalanceUpdates[0]?.Currency?.Name || pairs?.baseToken?.name;
+                        const symbol = _tokenSymbol || pairs?.baseToken?.symbol;
+                        const tokenName = _tokenName || pairs?.baseToken?.name;
+                        const tokenHolders = result3?.data?.holders || 0
                         console.log({tokenPrice,tokenLq,tokenVolumn,totalSupply,decimals,marketCap,symbol,tokenName});
                         const keyboard = [
                             [
@@ -369,29 +346,39 @@ const tokenTxPerMins = async(tokenAddress,date)=>{
                             {text: 'dextools', url: `https://www.dextools.io/app/en/ether/pair-explorer/${tokenAddress}`},
                             ]
                         ];
+                        var no_social_link = "No link available"
 return bot.sendMessage(channelId,
 `
-\n🎯 Hard Sniped Alert
+\n🚨 Alert: Sniper Action! 🚨
 
-🪙 ${tokenName} <a href="etherscan.io/token/${tokenAddress}">${symbol}</a>
+🪙 ${tokenName}
+
+🫧 Socials: ${social_link_status ? social_links : no_social_link}
+
+🎯 Massive Snipes Detected:
+
+<i>${bananaCount+mastroCount} times in less than 20 secs<i>
 💰Total Supply:<code>${totalSupply} (${decimals} decimals)</code>
 
-🫧 Socials: No link available
-🌀 Hard Sniped ${bananaCount+mastroCount} times in less than 20 secs
 
-🍌Banana: ${bananaCount}
-🤖Mastro: ${mastroCount}
-📈 Volume: $${tokenVolumn}
-💰 Mcap: $${marketCap}
-💧 Liquidity: $${tokenLq}
+🍌 Banana: <i>${bananaCount}</i>
+🤖 Mastro: <i>${mastroCount}</i>
 
-CA: <code>${tokenAddress}</code>
+
+👥 Holders: <i>${tokenHolders}</i>
+📈 Volume:  <i>$${tokenVolumn}</i>
+💰 Mcap: <i>$${marketCap}</i>
+💧 Liquidity: <i>$${tokenLq}</i>
+
+Contract Address: <code>${tokenAddress}</code>
+
+🔗 Links:<a href="https://etherscan.io/token/${tokenAddress}">Etherscan</a> | <a href="https://www.dextools.io/app/en/ether/pair-explorer/${tokenAddress}">Dextools</a>
 `,{
     parse_mode:'HTML',
     disable_web_page_preview: true,
-    reply_markup: JSON.stringify({
-        inline_keyboard: keyboard
-    })
+    // reply_markup: JSON.stringify({
+    //     inline_keyboard: keyboard
+    // })
 
 }
 );
@@ -404,7 +391,7 @@ CA: <code>${tokenAddress}</code>
                 return true
             });
     },[
-        1000*30
+        1000*40
     ]);
 }
 const getHoldersPer5m = async (tokenAddress, pairAddress /*address */, minutes /** minutes */, index /**index */) => {
