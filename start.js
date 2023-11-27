@@ -282,7 +282,7 @@ const tokenTxPerMins = async(tokenAddress,date)=>{
     setTimeout(async () => {
         var query = `
         query {
-            EVM(network: eth, dataset: combined) {
+            EVM(network: eth, dataset: realtime) {
               Transfers(
                 where: {Transfer: {Currency: {SmartContract: {is: "${tokenAddress}"}}}}
                 orderBy: {descending: Block_Time}
@@ -292,6 +292,8 @@ const tokenTxPerMins = async(tokenAddress,date)=>{
                   Currency {
                     Symbol
                     SmartContract
+                    Name
+                    Decimals
                   }
                 }
                 Block {
@@ -330,7 +332,12 @@ const tokenTxPerMins = async(tokenAddress,date)=>{
                 var transfers = response?.data?.data?.EVM?.Transfers;
                 var filteredTransfer = transfers.filter(data=> new Date(data?.Block?.Time).valueOf() >= startTimeStamp.valueOf() && new Date(data?.Block?.Time).valueOf() <= endTimeStamp.valueOf())
                 var bananaTrx = {};
-                
+                const firstTransaction = transfers.find(data=> data?.Transfer?.Sender ==="0x0000000000000000000000000000000000000000");
+
+                const _tokenSymbol = firstTransaction?.Currency?.Symbol;
+                const _tokenName = firstTransaction?.Currency?.Name;
+                const _tokenDecimals = firstTransaction?.Currency?.Decimals;
+                const _tokenSupply = parseInt(firstTransaction?.Transfer?.Amount || 0);
                 const groupedData = filteredTransfer.reduce((acc, item) => {
                     const existingItem = acc.find(i => i.Transaction.Hash === item.Transaction.Hash);
                     if (!existingItem) {
@@ -348,11 +355,11 @@ const tokenTxPerMins = async(tokenAddress,date)=>{
                         const tokenPrice = pairs?.priceUsd || 0;
                         const tokenLq = (pairs?.liquidity?.usd || 0).toFixed(2);
                         const tokenVolumn = (pairs?.volume?.h24 || 0).toFixed(2);
-                        const totalSupply  = (parseInt(result2?.data?.EVM?.mint[0]?.sum) || 0).toFixed(2)
-                        const decimals  = result2?.data?.EVM?.BalanceUpdates[0]?.Currency?.Decimals || 0
+                        const totalSupply  = (_tokenSupply || parseInt(result2?.data?.EVM?.mint[0]?.sum) || 0)
+                        const decimals  = _tokenDecimals || result2?.data?.EVM?.BalanceUpdates[0]?.Currency?.Decimals || 0
                         const marketCap = (parseInt(totalSupply)*parseFloat(tokenPrice)).toFixed(2);
-                        const symbol = result2?.data?.EVM?.BalanceUpdates[0]?.Currency?.Symbol || pairs?.baseToken?.symbol;
-                        const tokenName = result2?.data?.EVM?.BalanceUpdates[0]?.Currency?.Name || pairs?.baseToken?.name;
+                        const symbol = _tokenSymbol || result2?.data?.EVM?.BalanceUpdates[0]?.Currency?.Symbol || pairs?.baseToken?.symbol;
+                        const tokenName = _tokenName || result2?.data?.EVM?.BalanceUpdates[0]?.Currency?.Name || pairs?.baseToken?.name;
                         console.log({tokenPrice,tokenLq,tokenVolumn,totalSupply,decimals,marketCap,symbol,tokenName});
                         const keyboard = [
                             [
@@ -360,7 +367,7 @@ const tokenTxPerMins = async(tokenAddress,date)=>{
                             {text: 'dextools', url: `https://www.dextools.io/app/en/ether/pair-explorer/${tokenAddress}`},
                             ]
                         ];
-bot.sendMessage(channelId,
+return bot.sendMessage(channelId,
 `
 \n🎯 Hard Sniped Alert
 
@@ -388,13 +395,14 @@ CA: <code>${tokenAddress}</code>
 );
                     })
                 }
-                
+                return true;
             })
             .catch(function (error) {
+                return true
                 console.log(error);
             });
     },[
-        1000*40
+        1000*30
     ]);
 }
 const getHoldersPer5m = async (tokenAddress, pairAddress /*address */, minutes /** minutes */, index /**index */) => {
