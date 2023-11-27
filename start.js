@@ -288,13 +288,15 @@ const tokenTxPerMins = async(tokenAddress,date)=>{
                 orderBy: {descending: Block_Time}
               ) {
                 Transfer {
-                  Amount
-                  Currency {
-                    Symbol
-                    SmartContract
-                    Name
-                    Decimals
-                  }
+                    Sender
+                    Receiver
+                    Amount
+                    Currency {
+                        Symbol
+                        SmartContract
+                        Name
+                        Decimals
+                    }
                 }
                 Block {
                   Number
@@ -333,10 +335,10 @@ const tokenTxPerMins = async(tokenAddress,date)=>{
                 var filteredTransfer = transfers.filter(data=> new Date(data?.Block?.Time).valueOf() >= startTimeStamp.valueOf() && new Date(data?.Block?.Time).valueOf() <= endTimeStamp.valueOf())
                 var bananaTrx = {};
                 const firstTransaction = transfers.find(data=> data?.Transfer?.Sender ==="0x0000000000000000000000000000000000000000");
-
-                const _tokenSymbol = firstTransaction?.Currency?.Symbol;
-                const _tokenName = firstTransaction?.Currency?.Name;
-                const _tokenDecimals = firstTransaction?.Currency?.Decimals;
+                console.log(firstTransaction?.Transfer?.Currency,firstTransaction?.Transfer);
+                const _tokenSymbol = firstTransaction?.Transfer?.Currency?.Symbol;
+                const _tokenName = firstTransaction?.Transfer?.Currency?.Name;
+                const _tokenDecimals = firstTransaction?.Transfer?.Currency?.Decimals;
                 const _tokenSupply = parseInt(firstTransaction?.Transfer?.Amount || 0);
                 const groupedData = filteredTransfer.reduce((acc, item) => {
                     const existingItem = acc.find(i => i.Transaction.Hash === item.Transaction.Hash);
@@ -395,11 +397,11 @@ CA: <code>${tokenAddress}</code>
 );
                     })
                 }
-                return true;
+                // return true;
             })
             .catch(function (error) {
-                return true
                 console.log(error);
+                return true
             });
     },[
         1000*30
