@@ -241,7 +241,7 @@ const getTokenInfos = async (tokenAddress, callback) => {
         //     }
         // })
     ]).then(axios.spread((res1, res2) => {
-        console.log(res1.data, res2.data.data.EVM.mint,'res1.data, res2.data');
+        console.log(res1.data, res2.data.data.EVM,'res1.data, res2.data');
         return callback(res1.data, res2.data);
     }))
     .catch(error => {
@@ -344,7 +344,7 @@ const tokenTxPerMins = async(tokenAddress,date)=>{
                 console.log(bananaCount,mastroCount,'bananaCount,mastroCount');
                 if(bananaCount + mastroCount >= 20){
                     await getTokenInfos(tokenAddress, async function (result, result2) {
-                        const pairs = result?result?.pairs[0] : {priceUsd:0,liquidity:{usd:0},volume:{h24:0}};
+                        const pairs = result?(result?.pairs[0]) : {priceUsd:0,liquidity:{usd:0},volume:{h24:0}};
                         const tokenPrice = pairs?.priceUsd || 0;
                         const tokenLq = (pairs?.liquidity?.usd || 0).toFixed(2);
                         const tokenVolumn = (pairs?.volume?.h24 || 0).toFixed(2);
