@@ -183,7 +183,7 @@ const tokenTxPerMins = async(tokenAddress,date)=>{
             url: 'https://streaming.bitquery.io/graphql',
             headers: { 
                 'Content-Type': 'application/json', 
-                'X-API-KEY': 'BQYUWG8NvrMJ96Qmuqjq6mPLLPFG48Dr'
+                'X-API-KEY': 'BQYXzYlNQugCYxFQ3xA2KEWmQNVx2FI6'
             },
             data : data
         };
@@ -235,7 +235,7 @@ const tokenTxPerMins = async(tokenAddress,date)=>{
                         const marketCap = (parseInt(totalSupply)*parseFloat(tokenPrice)).toFixed(2);
                         const symbol = _tokenSymbol || pairs?.baseToken?.symbol;
                         const tokenName = _tokenName || pairs?.baseToken?.name;
-                        const {pagination} =  await getHoldersByContractAddress("0xb5427aE3a06e87095660e7175708fBDB9319E8f5");
+                        const {pagination} =  await getHoldersByContractAddress(tokenAddress);
                         const tokenHolders = pagination.total_count || 0
                         console.log({tokenPrice,tokenLq,tokenVolumn,totalSupply,decimals,marketCap,symbol,tokenName});
                         const keyboard = [
@@ -349,7 +349,7 @@ const getTxsper5m = async (tokenAddress, pairAddress, minutes, index) => {
             url: 'https://graphql.bitquery.io',
             headers: {
                 'Content-Type': 'application/json',
-                'X-API-KEY': 'BQYUWG8NvrMJ96Qmuqjq6mPLLPFG48Dr'
+                'X-API-KEY': 'BQYXzYlNQugCYxFQ3xA2KEWmQNVx2FI6'
             },
             data: data
         };
