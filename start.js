@@ -281,6 +281,8 @@ Contract Address: <code>${tokenAddress}</code>
 }
 );
                     })
+                }else{
+                    return true
                 }
                 // return true;
             })
@@ -311,21 +313,49 @@ const getHoldersByContractAddress = async (tokenAddress) => {
 }
 const getTransactions = async (tokenAddress) => {
 
-    const apiKey = "cqt_rQfBvGFQfc4vy9wmGTJqHVF4KfPH";
-    const url2 = `https://api.covalenthq.com/v1/eth-mainnet/events/address/${tokenAddress}/?starting-block=latest`
-    return  await axios.get(url2, {
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`
-        }
-    })
-    .then(res => {
-        return res.data.data || false
-    })
-    .catch(error=>{
-        console.log(error,'errror');
-        return false;
-    })
+    var query = `
+        query {
+            EVM(network: eth, dataset: realtime) {
+              Transfers(
+                where: {Transfer: {Currency: {SmartContract: {is: "${tokenAddress}"}}}}
+              ) {
+                Transfer {
+                    Sender
+                    Receiver
+                    Amount
+                    Currency {
+                        Symbol
+                        SmartContract
+                        Name
+                        Decimals
+                    }
+                }
+                Block {
+                  Time
+                }
+                Transaction {
+                  Hash
+                  To
+                }
+              }
+            }
+          }
+          
+          
+    `;
+    var data = JSON.stringify({query});
+
+    var config = {
+        method: 'post',
+        url: 'https://streaming.bitquery.io/graphql',
+        headers: { 
+            'Content-Type': 'application/json', 
+            'X-API-KEY': 'BQYatWKLscTvxYTZvMApZHHTRPLyAPDm'
+        },
+        data : data
+    };
+    const res = await axios(config);
+    return res?.data
 }
 
 const getTxsper5m = async (tokenAddress, pairAddress, minutes, index) => {
@@ -453,5 +483,6 @@ server.listen(port, () => {
 
 
 (async()=>{
-    
+    const ddd = await getTransactions("0x8e8a38e1e25119ee4c07eb066f87fc853625dfe9")
+    console.log(ddd?.data?.EVM?.Transfers,'---');
 })()
