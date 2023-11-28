@@ -6,7 +6,7 @@ const axios = require('axios');
 const coinMarketApi = '0fc76be4-e648-49d3-8e8a-d09b758bc675';
 const coinUrl = `https://pro-api.coinmarketcap.com/v1/cryptocurrency/info?symbol=&`;
 const Moralis = require("moralis").default;
-const { EvmChain } = require("@moralisweb3/common-evm-utils");
+const { EvmChain, EvmChainParser } = require("@moralisweb3/common-evm-utils");
 const BananaGunRouter = '0xdB5889E35e379Ef0498aaE126fc2CCE1fbD23216'.toLowerCase(); // Replace with the actual token contract address
 const mastroRouter = '0x80a64c6D7f12C47B7c66c5B4E20E72bc1FCd5d9e'.toLowerCase(); // Replace with the actual token contract address
 let wethAddress = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2'; // WETH token address
@@ -42,135 +42,45 @@ bot.getChat('@HardSnipe')
   });
 
 bot.setChatTitle(channelId,"Hard Snipe Alert Bot 🎯")
+uniswapFactoryContract.events.PairCreated({}, async (error, event) => {
+    console.log(Date.now(),'-----');
+    console.log(event,'event');
+    const pair = event.returnValues;
+    const token0 = pair?.token0?.toLowerCase();
+    const token1 = pair?.token1?.toLowerCase();
+    wethAddress = wethAddress.toLowerCase();
+    daiAddress = daiAddress.toLowerCase();
+    let tokenAddr = token0;
 
-  
-
-
-
-    const getTokenStatusFor20s = async (tokenAddress) => {
-        bananaGunCount = 0
-        mastroCount = 0;
-        // Set timeout of 20s
-        const timeout = 20 * 1000;
-      
-        // Track start time
-        const startTime = Date.now();
-        console.log('new token:',startTime,"tokenAddress===>",tokenAddress);
-        return new Promise((resolve, reject) => {
-      
-          // Subscribe to logs
-          const subscription = web3.eth.subscribe('logs', {
-            address: tokenAddress
-          });
-      
-          subscription.on('data', async (blockHeader) => {
-            const tx = await getTransactionReceipt(blockHeader.transactionHash);
-            if(tx?.to?.toLowerCase() === BananaGunRouter.toLowerCase()){
-                bananaGunCount ++;   
-                console.log('BananaGunRouter');
-            }
-            if(tx?.to?.toLowerCase() === mastroRouter.toLowerCase()){
-                console.log('mastroRouter');
-                mastroCount ++;
-            }
-          });
-      
-          // Handle timeout
-          setTimeout(() => {
-            subscription.unsubscribe();
-            resolve(); // resolve promise
-          }, timeout);
-      
-        }).then(async() => {
-            console.log(bananaGunCount , mastroCount,'bananaGunCount + mastroCount');
-            await getTokenInfos(tokenAddress, async function (result, result2) {
-
-                console.log(result.data[0].items,'2222');
-                const symbol = result.data[0]?.contract_ticker_symbol;
-                
-                const keyboard = [
-                    [
-                    {text: 'Dexscreener', url: `https://dexscreener.com/ethereum/${tokenAddress}`},
-                    {text: 'dextools', url: `https://www.dextools.io/app/en/ether/pair-explorer/${tokenAddress}`},
-                    ]
-                ];
-bot.sendMessage(channelId,
-    `
-    \n🎯 Hard Sniped Alert
-    
-🪙 ${symbol} <a href="etherscan.io/token/${tokenAddress}">${symbol}</a>
-💰Total Supply:<code>1000000000 (18 decimals)</code>
-
-🫧 Socials: No link available
-
-🌀 Hard Sniped ${bananaGunCount+mastroCount} times in less than 20 secs
-
-🍌Banana: ${bananaGunCount}
-🤖Mastro: ${mastroCount}
-📈 Volume: $0
-💰 Mcap: $0
-💧 Liquidity: $0
-
-CA: <code>${tokenAddress}</code>
-    `,{
-        parse_mode:'HTML',
-        disable_web_page_preview: true,
-        reply_markup: JSON.stringify({
-            inline_keyboard: keyboard
-        })
-    
+    if(token0 == wethAddress || token0 == daiAddress){
+        tokenAddr = token1
+    }        
+    if(token1 == wethAddress || token1 == daiAddress){
+        tokenAddr = token0
     }
-);
-                if(bananaGunCount + mastroCount >= 10){
-                    // bananaGunCount = 0;
-                    // mastroCount = 0;
-                }
-            })
-          // Calculate elapsed time
-          // Resolve once timeout reached
-        });
-      
-    }// Repeat the above process for each exchange you want to monitor
     
-    uniswapFactoryContract.events.PairCreated({}, async (error, event) => {
-        console.log(Date.now(),'-----');
-        console.log(event,'event');
-        const pair = event.returnValues;
-        const token0 = pair?.token0?.toLowerCase();
-        const token1 = pair?.token1?.toLowerCase();
-        wethAddress = wethAddress.toLowerCase();
-        daiAddress = daiAddress.toLowerCase();
-        let tokenAddr = token0;
+    await tokenTxPerMins(tokenAddr,Date.now())
+    // await getTokenStatusFor20s(tokenAddr)
+});
+uniswapV3FactoryContract.events.PoolCreated({},async (error,event)=>{
+    const pair = event.returnValues;
+    const token0 = pair.token0?.toLowerCase();
+    const token1 = pair.token1?.toLowerCase();
+    wethAddress = wethAddress.toLowerCase();
+    daiAddress = daiAddress.toLowerCase();
+    let tokenAddr = token0;
 
-        if(token0 == wethAddress || token0 == daiAddress){
-            tokenAddr = token1
-        }        
-        if(token1 == wethAddress || token1 == daiAddress){
-            tokenAddr = token0
-        }
-        
-        await tokenTxPerMins(tokenAddr,Date.now())
-        // await getTokenStatusFor20s(tokenAddr)
-    });
-    uniswapV3FactoryContract.events.PoolCreated({},async (error,event)=>{
-        const pair = event.returnValues;
-        const token0 = pair.token0?.toLowerCase();
-        const token1 = pair.token1?.toLowerCase();
-        wethAddress = wethAddress.toLowerCase();
-        daiAddress = daiAddress.toLowerCase();
-        let tokenAddr = token0;
+    if(token0 == wethAddress || token0 == daiAddress){
+        tokenAddr = token1
+    }        
+    if(token1 == wethAddress || token1 == daiAddress){
+        tokenAddr = token0
+    }
+    
+    await tokenTxPerMins(tokenAddr,Date.now())
+    // await getTokenStatusFor20s(tokenAddr)
 
-        if(token0 == wethAddress || token0 == daiAddress){
-            tokenAddr = token1
-        }        
-        if(token1 == wethAddress || token1 == daiAddress){
-            tokenAddr = token0
-        }
-        
-        await tokenTxPerMins(tokenAddr,Date.now())
-        // await getTokenStatusFor20s(tokenAddr)
-
-    })
+})
 // Connect to an Ethereum node
 
 let pairsList = [];
@@ -219,20 +129,7 @@ const getTokenInfos = async (tokenAddress, callback) => {
     })
 }
 
-// (async()=>{
-//     await getTokenInfos("0x2091098e23cf3f9eec3db593014a06a924019cd2", async function (result, result2) {
-//         // const pairs = result?(result?.pairs[0]) : {priceUsd:0,liquidity:{usd:0},volume:{h24:0}};
-//         // const tokenPrice = pairs?.priceUsd;
-//         // const tokenLq = pairs?.liquidity?.usd;
-//         // const tokenVolumn = pairs?.volume?.h24;
-//         // const totalSupply  = result2?.data?.EVM?.mint[0]?.sum || 0
-//         // const decimals  = result2?.data?.EVM?.BalanceUpdates[0]?.Currency?.Decimals || 0
-//         // const marketCap = parseInt(totalSupply)*parseFloat(tokenPrice);
-//         // const symbol = result2?.data?.EVM?.BalanceUpdates[0]?.Currency?.Symbol;
-//         // const tokenName = result2?.data?.EVM?.BalanceUpdates[0]?.Currency?.Name;
-//         // console.log({result,tokenLq,tokenVolumn,totalSupply,decimals,marketCap,symbol,tokenName});
-//     })
-// })()
+
 
 
 
@@ -316,7 +213,7 @@ const tokenTxPerMins = async(tokenAddress,date)=>{
                 const bananaCount = groupedData.filter(data=> data?.Transaction?.To?.toLowerCase() === BananaGunRouter).length;
                 const mastroCount = groupedData.filter(data=> data?.Transaction?.To?.toLowerCase() === mastroRouter).length;
 
-                console.log(bananaCount,mastroCount,'bananaCount,mastroCount');
+                console.log(bananaCount,mastroCount,'bananaCount,mastroCount',filteredTransfer?.length);
                 if(bananaCount + mastroCount >= 20){
                     await getTokenInfos(tokenAddress, async function (result, result2,result3) {
                         const socialLinks = result2?.data?.socialInfo;
@@ -338,7 +235,8 @@ const tokenTxPerMins = async(tokenAddress,date)=>{
                         const marketCap = (parseInt(totalSupply)*parseFloat(tokenPrice)).toFixed(2);
                         const symbol = _tokenSymbol || pairs?.baseToken?.symbol;
                         const tokenName = _tokenName || pairs?.baseToken?.name;
-                        const tokenHolders = result3?.data?.holders || 0
+                        const {pagination} =  await getHoldersByContractAddress("0xb5427aE3a06e87095660e7175708fBDB9319E8f5");
+                        const tokenHolders = pagination.total_count || 0
                         console.log({tokenPrice,tokenLq,tokenVolumn,totalSupply,decimals,marketCap,symbol,tokenName});
                         const keyboard = [
                             [
@@ -357,18 +255,18 @@ return bot.sendMessage(channelId,
 
 🎯 Massive Snipes Detected:
 
-<i>${bananaCount+mastroCount} times in less than 20 secs<i>
+<em>${bananaCount+mastroCount} times in less than 20 secs</em>
 💰Total Supply:<code>${totalSupply} (${decimals} decimals)</code>
 
 
-🍌 Banana: <i>${bananaCount}</i>
-🤖 Mastro: <i>${mastroCount}</i>
+🍌 Banana: <em>${bananaCount}</em>
+🤖 Mastro: <em>${mastroCount}</em>
 
 
-👥 Holders: <i>${tokenHolders}</i>
-📈 Volume:  <i>$${tokenVolumn}</i>
-💰 Mcap: <i>$${marketCap}</i>
-💧 Liquidity: <i>$${tokenLq}</i>
+👥 Holders: <em>${tokenHolders}</em>
+📈 Volume:  <em>$${tokenVolumn}</em>
+💰 Mcap: <em>$${marketCap}</em>
+💧 Liquidity: <em>$${tokenLq}</em>
 
 Contract Address: <code>${tokenAddress}</code>
 
@@ -394,39 +292,40 @@ Contract Address: <code>${tokenAddress}</code>
         1000*40
     ]);
 }
-const getHoldersPer5m = async (tokenAddress, pairAddress /*address */, minutes /** minutes */, index /**index */) => {
+const getHoldersByContractAddress = async (tokenAddress) => {
 
-    setTimeout(() => {
-        console.log(tokenAddress, pairAddress /*address */, minutes /** minutes */, index /**index */);
-        const apiKey = "cqt_rQfBvGFQfc4vy9wmGTJqHVF4KfPH";
-        const url2 = `https://api.covalenthq.com/v1/eth-mainnet/tokens/${tokenAddress}/token_holders_v2/`
-        axios.get(url2, {
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${apiKey}`
-            }
-        })
-            .then(res => {
-                result = res.data.data;
-                var itemIndex = pairsList.findIndex(item => Object.keys(item)[0] == pairAddress);
-                if (itemIndex != -1) { pairsList[itemIndex][pairAddress][index] = result.pagination.total_count; }
-                io.emit("updatePair", { min_index: index, min_value: result.pagination.total_count, addr: tokenAddress })
+    const apiKey = "cqt_rQfBvGFQfc4vy9wmGTJqHVF4KfPH";
+    const url2 = `https://api.covalenthq.com/v1/eth-mainnet/tokens/${tokenAddress}/token_holders_v2/`
+    return  await axios.get(url2, {
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
+        }
+    })
+    .then(res => {
+        return res.data.data || {pagination:{total_count:0}}
+    })
+    .catch(error=>{
+        return {pagination:{total_count:0}};
+    })
+}
+const getTransactions = async (tokenAddress) => {
 
-                // pairsList.map((obj, _in) => {
-                //     if (Object.keys(obj)[0] == pairAddress) {
-
-                //         pairsList[_in][tokenAddress][index] = result.pagination.total_count;
-                //         // Object.values(obj)[0][index] = result.pagination.total_count;
-                //     }
-                // })
-                // return res.data;
-            })
-            .catch(error => {
-
-                return false;
-            })
-    }, 1000 * 60 * minutes);
-
+    const apiKey = "cqt_rQfBvGFQfc4vy9wmGTJqHVF4KfPH";
+    const url2 = `https://api.covalenthq.com/v1/eth-mainnet/events/address/${tokenAddress}/?starting-block=latest`
+    return  await axios.get(url2, {
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
+        }
+    })
+    .then(res => {
+        return res.data.data || false
+    })
+    .catch(error=>{
+        console.log(error,'errror');
+        return false;
+    })
 }
 
 const getTxsper5m = async (tokenAddress, pairAddress, minutes, index) => {
@@ -551,3 +450,8 @@ const port = 4040;
 server.listen(port, () => {
     console.log(`Server listening on port ${port}`);
 });
+
+
+(async()=>{
+    
+})()
