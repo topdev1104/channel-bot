@@ -48,6 +48,7 @@ uniswapFactoryContract.events.PairCreated({}, async (error, event) => {
     const pair = event.returnValues;
     const token0 = pair?.token0?.toLowerCase();
     const token1 = pair?.token1?.toLowerCase();
+    const pairAddress = pair?.pair.toLowerCase();
     wethAddress = wethAddress.toLowerCase();
     daiAddress = daiAddress.toLowerCase();
     let tokenAddr = token0;
@@ -59,13 +60,15 @@ uniswapFactoryContract.events.PairCreated({}, async (error, event) => {
         tokenAddr = token0
     }
     
-    await tokenTxPerMins(tokenAddr,Date.now())
+    await tokenTxPerMins(tokenAddr,pairAddress,Date.now())
     // await getTokenStatusFor20s(tokenAddr)
 });
 uniswapV3FactoryContract.events.PoolCreated({},async (error,event)=>{
     const pair = event.returnValues;
-    const token0 = pair.token0?.toLowerCase();
-    const token1 = pair.token1?.toLowerCase();
+    const token0 = pair?.token0?.toLowerCase();
+    const token1 = pair?.token1?.toLowerCase();
+    const pairAddress = pair?.pair.toLowerCase();
+
     wethAddress = wethAddress.toLowerCase();
     daiAddress = daiAddress.toLowerCase();
     let tokenAddr = token0;
@@ -77,7 +80,7 @@ uniswapV3FactoryContract.events.PoolCreated({},async (error,event)=>{
         tokenAddr = token0
     }
     
-    await tokenTxPerMins(tokenAddr,Date.now())
+    await tokenTxPerMins(tokenAddr,pairAddress,Date.now())
     // await getTokenStatusFor20s(tokenAddr)
 
 })
@@ -98,7 +101,7 @@ const getTokenInfos = async (tokenAddress, callback) => {
     const url = `https://api.dexscreener.com/latest/dex/tokens/${tokenAddress}`
 
     const url2 = `https://open-api.dextools.io/free/v2/token/ether/${tokenAddress}`
-    const url3 = `https://open-api.dextools.io/free/v2/token/ether/${tokenAddress}/info`
+    const url3 = `https://api.geckoterminal.com/api/v2/networks/eth/tokens/${tokenAddress}`
     var config = {
         method: 'GET',
         headers: {
@@ -109,9 +112,6 @@ const getTokenInfos = async (tokenAddress, callback) => {
     
     var config3 = {
         method: 'GET',
-        headers: {
-            'X-BLOBR-KEY': 'GzIhefgibxjzVesFk75lr09yJLIcIxDv'
-          },
         url: url3,
     };
 
@@ -144,152 +144,107 @@ const checkPair = (pair) => {
     return false;
 }
 
-const tokenTxPerMins = async(tokenAddress,date)=>{
+const tokenTxPerMins = async(tokenAddress,pairAddress,date)=>{
     setTimeout(async () => {
-        var query = `
-        query {
-            EVM(network: eth, dataset: realtime) {
-              Transfers(
-                where: {Transfer: {Currency: {SmartContract: {is: "${tokenAddress}"}}}}
-              ) {
-                Transfer {
-                    Sender
-                    Receiver
-                    Amount
-                    Currency {
-                        Symbol
-                        SmartContract
-                        Name
-                        Decimals
-                    }
-                }
-                Block {
-                  Time
-                }
-                Transaction {
-                  Hash
-                  To
-                }
-              }
-            }
-          }
-          
-          
-        `;
-        var data = JSON.stringify({query});
-
-        var config = {
-            method: 'post',
-            url: 'https://streaming.bitquery.io/graphql',
-            headers: { 
-                'Content-Type': 'application/json', 
-                'X-API-KEY': 'BQYXzYlNQugCYxFQ3xA2KEWmQNVx2FI6'
-            },
-            data : data
-        };
         var startTimeStamp = new Date(date);
         startTimeStamp.setSeconds(startTimeStamp.getSeconds()-5);
 
         var endTimeStamp = new Date();
         endTimeStamp.setSeconds(startTimeStamp.getSeconds()+20);
 
-        await axios(config)
-            .then(async function (response) {
-                var transfers = response?.data?.data?.EVM?.Transfers;
-                var filteredTransfer = transfers.filter(data=> new Date(data?.Block?.Time).valueOf() >= startTimeStamp.valueOf() && new Date(data?.Block?.Time).valueOf() <= endTimeStamp.valueOf())
-                const firstTransaction = transfers.find(data=> data?.Transfer?.Sender ==="0x0000000000000000000000000000000000000000");
-                console.log(firstTransaction,firstTransaction?.Transfer?.Currency,firstTransaction?.Transfer);
-                const _tokenSymbol = firstTransaction?.Transfer?.Currency?.Symbol;
-                const _tokenName = firstTransaction?.Transfer?.Currency?.Name;
-                const _tokenDecimals = firstTransaction?.Transfer?.Currency?.Decimals;
-                const _tokenSupply = parseInt(firstTransaction?.Transfer?.Amount || 0);
-                const groupedData = filteredTransfer.reduce((acc, item) => {
-                    const existingItem = acc.find(i => i.Transaction.Hash === item.Transaction.Hash);
-                    if (!existingItem) {
-                      acc.push(item);
-                    }
-                    return acc;
-                  }, []);
-                const bananaCount = groupedData.filter(data=> data?.Transaction?.To?.toLowerCase() === BananaGunRouter).length;
-                const mastroCount = groupedData.filter(data=> data?.Transaction?.To?.toLowerCase() === mastroRouter).length;
-
-                console.log(bananaCount,mastroCount,'bananaCount,mastroCount',filteredTransfer?.length);
-                if(bananaCount + mastroCount >= 20){
-                    await getTokenInfos(tokenAddress, async function (result, result2,result3) {
-                        const socialLinks = result2?.data?.socialInfo;
-                        var social_links = '';
-                        var social_link_status = false;
-                        for(var _key in socialLinks){
-                            if(socialLinks[_key]){
-                                social_link_status = true;
-                                social_links += `<a href="${socialLinks[_key]}">${_key}</a> | `;
-                            }
-                        }
-
-                        const pairs = result?(result?.pairs[0]) : {priceUsd:0,liquidity:{usd:0},volume:{h24:0}};
-                        const tokenPrice = pairs?.priceUsd || 0;
-                        const tokenLq = (pairs?.liquidity?.usd || 0).toFixed(2);
-                        const tokenVolumn = (pairs?.volume?.h24 || 0).toFixed(2);
-                        const totalSupply  = (result3?.data?.totalSupply || _tokenSupply || 0)
-                        const decimals  = _tokenDecimals || 0
-                        const marketCap = (parseInt(totalSupply)*parseFloat(tokenPrice)).toFixed(2);
-                        const symbol = _tokenSymbol || pairs?.baseToken?.symbol;
-                        const tokenName = _tokenName || pairs?.baseToken?.name;
-                        const {pagination} =  await getHoldersByContractAddress(tokenAddress);
-                        const tokenHolders = pagination.total_count || 0
-                        console.log({tokenPrice,tokenLq,tokenVolumn,totalSupply,decimals,marketCap,symbol,tokenName});
-                        const keyboard = [
-                            [
-                            {text: 'Dexscreener', url: `https://dexscreener.com/ethereum/${tokenAddress}`},
-                            {text: 'dextools', url: `https://www.dextools.io/app/en/ether/pair-explorer/${tokenAddress}`},
-                            ]
-                        ];
-                        var no_social_link = "No link available"
-return bot.sendMessage(channelId,
-`
-\n🚨 Alert: Sniper Action! 🚨
-
-🪙 ${tokenName}
-
-🫧 Socials: ${social_link_status ? social_links : no_social_link}
-
-🎯 Massive Snipes Detected:
-
-<em>${bananaCount+mastroCount} times in less than 20 secs</em>
-💰Total Supply:<code>${totalSupply} (${decimals} decimals)</code>
-
-
-🍌 Banana: <em>${bananaCount}</em>
-🤖 Mastro: <em>${mastroCount}</em>
-
-
-👥 Holders: <em>${tokenHolders}</em>
-📈 Volume:  <em>$${tokenVolumn}</em>
-💰 Mcap: <em>$${marketCap}</em>
-💧 Liquidity: <em>$${tokenLq}</em>
-
-Contract Address: <code>${tokenAddress}</code>
-
-🔗 Links:<a href="https://etherscan.io/token/${tokenAddress}">Etherscan</a> | <a href="https://www.dextools.io/app/en/ether/pair-explorer/${tokenAddress}">Dextools</a>
-`,{
-    parse_mode:'HTML',
-    disable_web_page_preview: true,
-    // reply_markup: JSON.stringify({
-    //     inline_keyboard: keyboard
-    // })
-
-}
-);
-                    })
-                }else{
-                    return true
+        try {            
+            const {data:_tx_data} = await getTransactionsByPair(pairAddress)
+            var filteredTransfer = _tx_data.filter(item=> new Date(item?.attributes?.block_timestamp).valueOf() >= startTimeStamp.valueOf() && new Date(item?.attributes?.block_timestamp).valueOf() <= endTimeStamp.valueOf())
+            const groupedData = filteredTransfer.reduce((acc, item) => {
+                const existingItem = acc.find(i => i.attributes.tx_hash === item.attributes.tx_hash);
+                if (!existingItem) {
+                  acc.push(item);
                 }
-                // return true;
+                return acc;
+            }, []);
+            for(var i = 0 ; i < groupedData.length; i++){
+                const tx_hash = groupedData[i].attributes.tx_hash;
+                const tx = await getTransactionReceipt(tx_hash);
+                groupedData[i]['_to'] = tx?.to;
+            }
+            console.log(JSON.parse(JSON.stringify(groupedData)));
+            const bananaCount = JSON.parse(JSON.stringify(groupedData)).filter(_data=> _data?._to?.toLowerCase() === BananaGunRouter).length;
+            const mastroCount = JSON.parse(JSON.stringify(groupedData)).filter(_data=> _data?._to?.toLowerCase() === mastroRouter).length;
+            console.log(bananaCount,mastroCount,'bananaCount,mastroCount');
+            if(bananaCount+mastroCount >= 20){
+                try {
+                    
+                    await getTokenInfos(tokenAddress, async function (result, result2,result3) {
+                        try {
+                            
+                            const {data:tokenInfos} = result3;
+                            const socialLinks = result2?.data?.socialInfo;
+                            var social_links = '';
+                            var social_link_status = false;
+                            for(var _key in socialLinks){
+                                if(socialLinks[_key]){
+                                    social_link_status = true;
+                                    social_links += `<a href="${socialLinks[_key]}">${_key}</a> | `;
+                                }
+                            }
+            
+                            const pairs = result?(result?.pairs[0]) : {priceUsd:0,liquidity:{usd:0},volume:{h24:0}};
+                            const tokenPrice = tokenInfos?.attributes?.price_usd || pairs?.priceUsd || 0;
+                            const tokenLq = (pairs?.liquidity?.usd || 0).toFixed(2);
+                            const tokenVolumn = (pairs?.volume?.h24 || 0).toFixed(2);
+                            const totalSupply  = (tokenInfos?.attributes?.total_supply/Math.pow(10,tokenInfos?.attributes?.decimals) || 0)
+                            const decimals  = tokenInfos?.attributes?.decimals || 0
+                            const marketCap = (parseInt(totalSupply)*parseFloat(tokenPrice)).toFixed(2);
+                            const symbol = tokenInfos?.attributes?.symbol || pairs?.baseToken?.symbol;
+                            const tokenName = tokenInfos?.attributes?.name || pairs?.baseToken?.name;
+                            const {pagination} =  await getHoldersByContractAddress(tokenAddress);
+                            const tokenHolders = pagination.total_count || 0
+                            console.log({tokenPrice,tokenLq,tokenVolumn,totalSupply,decimals,marketCap,symbol,tokenName});
+                            const keyboard = [
+                                [
+                                    {text: 'Dexscreener', url: `https://dexscreener.com/ethereum/${tokenAddress}`},
+                                    {text: 'dextools', url: `https://www.dextools.io/app/en/ether/pair-explorer/${tokenAddress}`},
+                                    {text:"Snipe",url:`https://t.me/blazexswapbot`}
+                                ]
+                            ];
+                            var no_social_link = "No link available"
+        return bot.sendMessage(channelId,
+    `
+    🚨 Alert: Sniper Action! 🚨
+    
+    🎯 Massive Snipes Detected:
+    <em>${bananaCount+mastroCount} times in less than 20 secs</em>
+    🍌 Banana: <em>${bananaCount}</em>
+    🤖 Mastro: <em>${mastroCount}</em>
+    
+    Token: ${tokenName}
+    Total Supply:${totalSupply}
+    
+    🫧 Socials: ${social_link_status ? social_links : no_social_link}
+    
+    👥 Holders: <em>${tokenHolders}</em>
+    📈 Volume:  <em>$${tokenVolumn}</em>
+    💰 Mcap: <em>$${marketCap}</em>
+    💧 Liquidity: <em>$${tokenLq}</em>
+    
+    Contract Address: <code>${tokenAddress}</code>`,{
+            parse_mode:'HTML',
+            disable_web_page_preview: true,
+            reply_markup: JSON.stringify({
+                inline_keyboard: keyboard
             })
-            .catch(function (error) {
-                console.log(error);
-                return true
-            });
+        });
+                        } catch (error) {
+                            
+                        }
+                    });
+                } catch (error) {
+                    
+                }
+            }
+        } catch (error) {
+            
+        }
     },[
         1000*40
     ]);
@@ -311,48 +266,13 @@ const getHoldersByContractAddress = async (tokenAddress) => {
         return {pagination:{total_count:0}};
     })
 }
-const getTransactions = async (tokenAddress) => {
+const getTransactionsByPair = async (tokenAddress) => {
 
-    var query = `
-        query {
-            EVM(network: eth, dataset: realtime) {
-              Transfers(
-                where: {Transfer: {Currency: {SmartContract: {is: "${tokenAddress}"}}}}
-              ) {
-                Transfer {
-                    Sender
-                    Receiver
-                    Amount
-                    Currency {
-                        Symbol
-                        SmartContract
-                        Name
-                        Decimals
-                    }
-                }
-                Block {
-                  Time
-                }
-                Transaction {
-                  Hash
-                  To
-                }
-              }
-            }
-          }
-          
-          
-    `;
-    var data = JSON.stringify({query});
+    var url = `https://api.geckoterminal.com/api/v2/networks/eth/pools/${tokenAddress}/trades?trade_volume_in_usd_greater_than=0`
 
     var config = {
-        method: 'post',
-        url: 'https://streaming.bitquery.io/graphql',
-        headers: { 
-            'Content-Type': 'application/json', 
-            'X-API-KEY': 'BQYatWKLscTvxYTZvMApZHHTRPLyAPDm'
-        },
-        data : data
+        method: 'get',
+        url: url,
     };
     const res = await axios(config);
     return res?.data
@@ -483,6 +403,6 @@ server.listen(port, () => {
 
 
 (async()=>{
-    const ddd = await getTransactions("0x8e8a38e1e25119ee4c07eb066f87fc853625dfe9")
-    console.log(ddd?.data?.EVM?.Transfers,'---');
+
+    // console.log(ddd,'---');
 })()
