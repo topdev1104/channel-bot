@@ -202,7 +202,7 @@ const tokenTxPerMins = async(tokenAddress,pairAddress,date)=>{
                             console.log({tokenPrice,tokenLq,tokenVolumn,totalSupply,decimals,marketCap,symbol,tokenName});
                             const keyboard = [
                                 [
-                                    {text: 'Dexscreener', url: `https://dexscreener.com/ethereum/${tokenAddress}`},
+                                    {text: 'Etherscan', url: `https://etherscan.io/token/${tokenAddress}`},
                                     {text: 'dextools', url: `https://www.dextools.io/app/en/ether/pair-explorer/${tokenAddress}`},
                                     {text:"Snipe",url:`https://t.me/blazexswapbot`}
                                 ]
@@ -210,24 +210,24 @@ const tokenTxPerMins = async(tokenAddress,pairAddress,date)=>{
                             var no_social_link = "No link available"
         return bot.sendMessage(channelId,
     `
-    🚨 Alert: Sniper Action! 🚨
-    
-    🎯 Massive Snipes Detected:
-    <em>${bananaCount+mastroCount} times in less than 20 secs</em>
-    🍌 Banana: <em>${bananaCount}</em>
-    🤖 Mastro: <em>${mastroCount}</em>
-    
-    Token: ${tokenName}
-    Total Supply:${totalSupply}
-    
-    🫧 Socials: ${social_link_status ? social_links : no_social_link}
-    
-    👥 Holders: <em>${tokenHolders}</em>
-    📈 Volume:  <em>$${tokenVolumn}</em>
-    💰 Mcap: <em>$${marketCap}</em>
-    💧 Liquidity: <em>$${tokenLq}</em>
-    
-    Contract Address: <code>${tokenAddress}</code>`,{
+🚨 Alert: Sniper Action! 🚨
+
+🎯 Massive Snipes Detected:
+<em>${bananaCount+mastroCount} times in less than 20 secs</em>
+🍌 Banana: <em>${bananaCount}</em>
+🤖 Mastro: <em>${mastroCount}</em>
+
+Token: ${tokenName}
+Total Supply:${totalSupply}
+
+🫧 Socials: ${social_link_status ? social_links : no_social_link}
+
+👥 Holders: <em>${tokenHolders}</em>
+📈 Volume:  <em>$${tokenVolumn}</em>
+💰 Mcap: <em>$${marketCap}</em>
+💧 Liquidity: <em>$${tokenLq}</em>
+
+Contract Address: <code>${tokenAddress}</code>`,{
             parse_mode:'HTML',
             disable_web_page_preview: true,
             reply_markup: JSON.stringify({
