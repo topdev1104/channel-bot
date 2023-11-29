@@ -48,7 +48,7 @@ uniswapFactoryContract.events.PairCreated({}, async (error, event) => {
     const pair = event.returnValues;
     const token0 = pair?.token0?.toLowerCase();
     const token1 = pair?.token1?.toLowerCase();
-    const pairAddress = pair?.pair.toLowerCase();
+    const pairAddress = pair?.pair?.toLowerCase();
     wethAddress = wethAddress.toLowerCase();
     daiAddress = daiAddress.toLowerCase();
     let tokenAddr = token0;
@@ -67,7 +67,7 @@ uniswapV3FactoryContract.events.PoolCreated({},async (error,event)=>{
     const pair = event.returnValues;
     const token0 = pair?.token0?.toLowerCase();
     const token1 = pair?.token1?.toLowerCase();
-    const pairAddress = pair?.pair.toLowerCase();
+    const pairAddress = pair?.pair?.toLowerCase();
 
     wethAddress = wethAddress.toLowerCase();
     daiAddress = daiAddress.toLowerCase();
