@@ -120,12 +120,10 @@ const getTokenInfos = async (tokenAddress, callback) => {
         axios(config),
         axios(config3),
     ]).then(axios.spread((res1, res2,res3) => {
-        console.log(res2.data);
         return callback(res1.data, res2?.data,res3?.data);
     }))
     .catch(error => {
-        console.log(error, '333333333333333');
-        return callback(false);
+        return callback(false,false,false);
     })
 }
 
@@ -177,14 +175,16 @@ const tokenTxPerMins = async(tokenAddress,pairAddress,date)=>{
                     await getTokenInfos(tokenAddress, async function (result, result2,result3) {
                         try {
                             
-                            const {data:tokenInfos} = result3;
-                            const socialLinks = result2?.data?.socialInfo;
+                            const {data:tokenInfos} = (result3 || {data:false});
+                            const socialLinks = result2?.data?.socialInfo || false;
                             var social_links = '';
                             var social_link_status = false;
-                            for(var _key in socialLinks){
-                                if(socialLinks[_key]){
-                                    social_link_status = true;
-                                    social_links += `<a href="${socialLinks[_key]}">${_key}</a> | `;
+                            if(socialLinks){
+                                for(var _key in socialLinks){
+                                    if(socialLinks[_key]){
+                                        social_link_status = true;
+                                        social_links += `<a href="${socialLinks[_key]}">${_key}</a> | `;
+                                    }
                                 }
                             }
             
