@@ -176,16 +176,21 @@ const tokenTxPerMins = async(tokenAddress,pairAddress,date)=>{
                         try {
                             
                             const {data:tokenInfos} = (result3 || {data:false});
-                            const socialLinks = result2?.data?.socialInfo || false;
                             var social_links = '';
                             var social_link_status = false;
-                            if(socialLinks){
-                                for(var _key in socialLinks){
-                                    if(socialLinks[_key]){
-                                        social_link_status = true;
-                                        social_links += `<a href="${socialLinks[_key]}">${_key}</a> | `;
-                                    }
-                                }
+                            const {telegramUrl,twitterUrl,websiteUrl} = await getSocialLinksByContractAddress(tokenAddress)
+                            console.log(telegramUrl,twitterUrl,websiteUrl,'telegramUrl,twitterUrl,websiteUrl');
+                            if(telegramUrl){
+                                social_links += `<a href="${telegramUrl}">Telegram</a> | `
+                                social_link_status = true;
+                            }
+                            if(twitterUrl){
+                                social_links += ` <a href="${twitterUrl}">Twitter</a> | `
+                                social_link_status = true;
+                            }
+                            if(websiteUrl){
+                                social_links += ` <a href="${websiteUrl}">Website</a>`
+                                social_link_status = true
                             }
             
                             const pairs = result?(result?.pairs[0]) : {priceUsd:0,liquidity:{usd:0},volume:{h24:0}};
@@ -248,6 +253,42 @@ Contract Address: <code>${tokenAddress}</code>`,{
     },[
         1000*40
     ]);
+}
+const getSocialLinksByContractAddress = (tokenAddress)=>{
+    let config = {
+        method: 'get',
+        url: `https://api.etherscan.io/api?module=contract&action=getsourcecode&address=${tokenAddress}&apikey=QFWPKU6KKM7AKHU36Z3S1RDT5KY3V85N5C`,
+    };
+    return axios.request(config)
+    .then(({data}) => {
+        const text = data?.result[0].SourceCode
+        if(text){
+            const regex = /(http[s]?:\/\/[^\s]+)/g;
+            const links = text.match(regex);
+            const telegramRegex = /^https?:\/\/t\.me\//;
+            const twitterRegex = /https:\/\/twitter\.com\/([^\/\n\s]+)/;
+            let telegramUrl = false;
+            let twitterUrl = false;
+            const otherUrls = []
+            console.log(links,'links');
+            links.forEach(url => {
+                if (telegramRegex.test(url)) {
+                    telegramUrl = url.replace("\\n", "");;
+                } else if (twitterRegex.test(url)) {
+                    twitterUrl = url.replace("\\n", "");
+                } else {
+                    otherUrls.push(url.replace("\\n", ""));
+                }
+            });
+            let websiteUrl = otherUrls[0] || false
+            return {telegramUrl,twitterUrl,websiteUrl}
+        }else{
+            return {telegramUrl:false,twitterUrl:false,websiteUrl:false}
+        }
+    })
+    .catch(error=>{
+        return {telegramUrl:false,twitterUrl:false,websiteUrl:false}
+    })
 }
 const getHoldersByContractAddress = async (tokenAddress) => {
 
