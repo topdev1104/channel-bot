@@ -235,15 +235,15 @@ Contract Address: <code>${tokenAddress}</code>`,{
             })
         });
                         } catch (error) {
-                            
+                            console.log(error,'2222222222');
                         }
                     });
                 } catch (error) {
-                    
+                    console.log(error,'1111');
                 }
             }
         } catch (error) {
-            
+            console.log(error,'34343');
         }
     },[
         1000*40
