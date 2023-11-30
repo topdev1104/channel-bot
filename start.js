@@ -176,10 +176,11 @@ const tokenTxPerMins = async(tokenAddress,pairAddress,date)=>{
                         try {
                             
                             const {data:tokenInfos} = (result3 || {data:false});
+                            if(!result?.pairs)result= false
                             var social_links = '';
                             var social_link_status = false;
                             const {telegramUrl,twitterUrl,websiteUrl} = await getSocialLinksByContractAddress(tokenAddress)
-                            console.log(telegramUrl,twitterUrl,websiteUrl,'telegramUrl,twitterUrl,websiteUrl');
+                            console.log(telegramUrl,twitterUrl,websiteUrl,result,'telegramUrl,twitterUrl,websiteUrl');
                             if(telegramUrl){
                                 social_links += `<a href="${telegramUrl}">Telegram</a> | `
                                 social_link_status = true;
