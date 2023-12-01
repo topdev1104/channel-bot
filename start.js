@@ -394,7 +394,11 @@ const getCoinPrice = (tokenAddress, pairAddress, minutes, index) => {
 }
 
 async function getTransactionReceipt(tx) {
-    return await web3.eth.getTransactionReceipt(tx);
+    try {
+        return await web3.eth.getTransactionReceipt(tx);
+    } catch (error) {
+        return false
+    }
 }
 
 
