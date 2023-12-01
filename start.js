@@ -194,7 +194,8 @@ const tokenTxPerMins = async(tokenAddress,pairAddress,date)=>{
                                 social_link_status = true
                             }
             
-                            const pairs = result?(result?.pairs[0]) : {priceUsd:0,liquidity:{usd:0},volume:{h24:0}};
+                            const pairs = result?(result?.pairs[0]) : {pair_status:true,priceUsd:0,liquidity:{usd:0},volume:{h24:0}};
+                            console.log(pairs,'1111');
                             const tokenPrice = tokenInfos?.attributes?.price_usd || pairs?.priceUsd || 0;
                             const tokenLq = (pairs?.liquidity?.usd || 0).toFixed(2);
                             const tokenVolumn = (pairs?.volume?.h24 || 0).toFixed(2);
@@ -214,7 +215,7 @@ const tokenTxPerMins = async(tokenAddress,pairAddress,date)=>{
                                 ]
                             ];
                             var no_social_link = "No link available"
-        return bot.sendMessage(channelId,
+        return (tokenName && pairs?.pair_status) && bot.sendMessage(channelId,
     `
 🚨 Alert: Sniper Action! 🚨
 
