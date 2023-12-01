@@ -66,8 +66,26 @@ uniswapV3FactoryContract.events.PoolCreated({},async (error,event)=>{
 
 const checkMassiveVolumnAndHoldersByContractAddress = async(tokenAddress,pairAddress)=>{
     const url = `https://api.dexscreener.com/latest/dex/tokens/${tokenAddress}`;
-    const massiveHolders = await getMassiveHoldersByContractAddress(tokenAddress)
-    setTimeout(() => {
+    
+    setTimeout(async() => {
+        var social_links = '';
+        var social_link_status = false;
+        const [massiveHolders,holders] = await getMassiveHoldersByContractAddress(tokenAddress);
+        const {telegramUrl,twitterUrl,websiteUrl} = await getSocialLinksByContractAddress(tokenAddress)
+        var no_social_link = "No link available"
+        if(telegramUrl){
+            social_links += `<a href="${telegramUrl}">Telegram</a> | `
+            social_link_status = true;
+        }
+        if(twitterUrl){
+            social_links += ` <a href="${twitterUrl}">Twitter</a> | `
+            social_link_status = true;
+        }
+        if(websiteUrl){
+            social_links += ` <a href="${websiteUrl}">Website</a>`
+            social_link_status = true
+        }
+
         axios.get(url)
         .then(({data})=>{
             console.log(data,);
@@ -92,8 +110,11 @@ const checkMassiveVolumnAndHoldersByContractAddress = async(tokenAddress,pairAdd
 return bot.sendMessage(channelId,`
 🎯Massive Volume Detected over 10K$ Volume in first 5 minutes:
 
-🪙Token:${tokenInfo.name} <em>${tokenInfo.symbol}</em>
-📈Volumn: <em>$${volumnFor5m}</em>
+🫧 Socials: ${social_link_status?social_links:no_social_link}
+
+👥 Holders: ${holders}
+🪙 Token:${tokenInfo.name} <em>${tokenInfo.symbol}</em>
+📈 Volumn: <em>$${volumnFor5m}</em>
 Contract Address:<code>${tokenAddress}</code>
 
 🎯Massive Wallet Buy Detected in the first 5 minutes
@@ -108,6 +129,9 @@ ${massiveWallets}
 return bot.sendMessage(channelId,`
 🎯Massive Volume Detected over 10K$ Volume in first 5 minutes:
 
+🫧 Socials: ${social_link_status?social_links:no_social_link}
+
+👥 Holders: ${holders}
 🪙Token:${tokenInfo.name} <em>${tokenInfo.symbol}</em>
 📈Volumn: <em>$${volumnFor5m}</em>
 Contract Address:<code>${tokenAddress}</code>
