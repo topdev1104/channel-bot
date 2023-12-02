@@ -102,7 +102,7 @@ const checkMassiveVolumnAndHoldersByContractAddress = async(tokenAddress,pairAdd
             ];
 
             var massiveWallets = ''
-            for(var i = 0 ; i< massiveHolders.length;i++){
+            for(var i = 0 ; i< massiveHolders?.length;i++){
                 massiveWallets+= `<code>${massiveHolders[i]}</code>\n`
             }
         
@@ -167,17 +167,18 @@ const getMassiveHoldersByContractAddress = async(tokenAddress)=>{
             }
         }
     };
-    const holders =  await axios.request(options)
+    const _holders =  await axios.request(options)
     .then(function ({data}) {
         const holders = data.result.holders;
-        return holders || []
+        const holderCount = data.result.holdersCount || 0
+        return [holders || [] ,holderCount]
     })
     .catch(function (error) {
-        return [];
+        return [[],0];
     });
+    const holders = _holders[0];
     const massiveHolders =  [];
     const tokenPrice = await getTokenPrice(tokenAddress);
-    console.log(holders.length);
     for(var i = 0 ; i< holders.length;i++){
         const obj = holders[i];
         if(parseFloat(obj?.balance) * tokenPrice >= 1000 * 100){
@@ -185,9 +186,9 @@ const getMassiveHoldersByContractAddress = async(tokenAddress)=>{
         }
     }
     if(massiveHolders.length >= 5){
-        return massiveHolders;
+        return [massiveHolders,_holders[1]];
     }
-    return [];
+    return [[],0];
 }
 const getTokenPrice = async(tokenAddress)=>{
     const options = {
