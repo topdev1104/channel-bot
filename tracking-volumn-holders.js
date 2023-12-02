@@ -19,6 +19,7 @@ const uniswapV3ABI = require('./uniswapV3.json');
 const uniswapFactoryContract = new web3.eth.Contract(uniswapEthABI, uniswapEthAddress);
 const uniswapV3FactoryContract = new web3.eth.Contract(uniswapV3ABI, uniswapV3EthAddress);
 const channelId = "-1002006529312";
+const channelId1 = "-1002088905227"
 const bot = new TelegramBot(BOT_TOKEN, {
 polling: true,
 });
@@ -71,6 +72,7 @@ const checkMassiveVolumnAndHoldersByContractAddress = async(tokenAddress,pairAdd
         var social_links = '';
         var social_link_status = false;
         const [massiveHolders,holders] = await getMassiveHoldersByContractAddress(tokenAddress);
+        console.log(holders,tokenAddress,'holders,tokenAddress');
         const {telegramUrl,twitterUrl,websiteUrl} = await getSocialLinksByContractAddress(tokenAddress);
         const {name,symbol,price_usd,total_supply,token_mc,decimals} = await getTokenSupply(tokenAddress);
         var no_social_link = "No link available"
@@ -196,7 +198,11 @@ const getMassiveHoldersByContractAddress = async(tokenAddress)=>{
     .catch(function (error) {
         return [[],0];
     });
-    console.log(_holders[1],'ddddddd');
+    console.log(_holders[1],'ddddddd',tokenAddress);
+    bot.sendMessage(channelId1,`
+        ${tokenAddress}
+        Holders:${_holders[1]}
+    `);
     const holders = _holders[0];
     const massiveHolders =  [];
     const tokenPrice = await getTokenPrice(tokenAddress);
@@ -206,11 +212,7 @@ const getMassiveHoldersByContractAddress = async(tokenAddress)=>{
             massiveHolders.push(obj?.holderAddress);
         }
     }
-    if(massiveHolders.length >= 5){
-        return [massiveHolders,_holders[1]];
-    }else{
-        return [[],0];
-    }
+    return [massiveHolders,_holders[1]];
 }
 const getTokenPrice = async(tokenAddress)=>{
     const options = {
