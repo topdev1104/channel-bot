@@ -71,7 +71,8 @@ const checkMassiveVolumnAndHoldersByContractAddress = async(tokenAddress,pairAdd
         var social_links = '';
         var social_link_status = false;
         const [massiveHolders,holders] = await getMassiveHoldersByContractAddress(tokenAddress);
-        const {telegramUrl,twitterUrl,websiteUrl} = await getSocialLinksByContractAddress(tokenAddress)
+        const {telegramUrl,twitterUrl,websiteUrl} = await getSocialLinksByContractAddress(tokenAddress);
+        const {name,symbol,price_usd,total_supply,token_mc,decimals} = await getTokenSupply(tokenAddress);
         var no_social_link = "No link available"
         if(telegramUrl){
             social_links += `<a href="${telegramUrl}">Telegram</a> | `
@@ -89,15 +90,17 @@ const checkMassiveVolumnAndHoldersByContractAddress = async(tokenAddress,pairAdd
         axios.get(url)
         .then(({data})=>{
             console.log(data,);
-            const pairs = data?.pairs || [{volume:{m5:0}}];
+            const pairs = data?.pairs || [{volume:{m5:0},liquidity:{usd:0}}];
             const volumnFor5m = parseFloat(pairs[0]?.volume?.m5);
-            console.log('filtered',tokenAddress,volumnFor5m);
+            const tokenLq = pairs[0]?.liquidity?.usd;
+
         if(volumnFor5m >= 10000){
             const tokenInfo = pairs[0].baseToken
             const keyboard = [
                 [
                     {text: 'Etherscan', url: `https://etherscan.io/token/${tokenAddress}`},
                     {text: 'Dextools', url: `https://www.dextools.io/app/en/ether/pair-explorer/${tokenAddress}`},
+                    {text:"Snipe",url:`https://t.me/blazexswapbot`}
                 ]
             ];
 
@@ -108,35 +111,52 @@ const checkMassiveVolumnAndHoldersByContractAddress = async(tokenAddress,pairAdd
         
             if(massiveHolders.length >= 5){
 return bot.sendMessage(channelId,`
+🚨 Alert: Sniper Action! 🚨
+
 🎯Massive Volume Detected over 10K$ Volume in first 5 minutes:
+
+🪙 Token: ${tokenInfo.name || name}
+Total Supply:${total_supply}
 
 🫧 Socials: ${social_link_status?social_links:no_social_link}
 
 👥 Holders: ${holders}
-🪙 Token:${tokenInfo.name} <em>${tokenInfo.symbol}</em>
 📈 Volumn: <em>$${volumnFor5m}</em>
+💰 Mcap: <em>$${token_mc}</em>
+💧 Liquidity: <em>$${tokenLq}</em>
+
 Contract Address:<code>${tokenAddress}</code>
 
 🎯Massive Wallet Buy Detected in the first 5 minutes
+
 ${massiveWallets}
 `,{
     parse_mode:'HTML',
+    disable_web_page_preview: true,
     reply_markup: JSON.stringify({
         inline_keyboard: keyboard
     })
 });
             }else{
 return bot.sendMessage(channelId,`
+🚨 Alert: Sniper Action! 🚨
+
 🎯Massive Volume Detected over 10K$ Volume in first 5 minutes:
+
+🪙 Token: ${tokenInfo.name || name}
+Total Supply:${total_supply}
 
 🫧 Socials: ${social_link_status?social_links:no_social_link}
 
 👥 Holders: ${holders}
-🪙Token:${tokenInfo.name} <em>${tokenInfo.symbol}</em>
-📈Volumn: <em>$${volumnFor5m}</em>
+📈 Volumn: <em>$${volumnFor5m}</em>
+💰 Mcap: <em>$${token_mc}</em>
+💧 Liquidity: <em>$${tokenLq}</em>
+
 Contract Address:<code>${tokenAddress}</code>
 `,{
     parse_mode:'HTML',
+    disable_notification:true,
     reply_markup: JSON.stringify({
         inline_keyboard: keyboard
     })
@@ -176,6 +196,7 @@ const getMassiveHoldersByContractAddress = async(tokenAddress)=>{
     .catch(function (error) {
         return [[],0];
     });
+    console.log(_holders[1],'ddddddd');
     const holders = _holders[0];
     const massiveHolders =  [];
     const tokenPrice = await getTokenPrice(tokenAddress);
@@ -218,6 +239,28 @@ const getTokenPrice = async(tokenAddress)=>{
         });
 
     return tokenPrice || 0;
+}
+const getTokenSupply = async(tokenAddress)=>{
+    const url = `https://api.geckoterminal.com/api/v2/networks/eth/tokens/${tokenAddress}`;
+    var config = {
+        method: 'GET',
+        url: url,
+    };
+    const {data} = await axios(config)
+    .then(({data})=>{
+        return data;
+    }).catch(error=>{
+        return false;
+    })
+    if(data){
+        const {attributes} = data;
+        let {name,symbol,decimals,total_supply,price_usd} = attributes;
+        total_supply = parseFloat(total_supply)/10**decimals;
+        let token_mc = price_usd * total_supply;
+        return {name,symbol,decimals,total_supply,price_usd,token_mc}
+    }else{
+        return {name:'',symbol:'',decimals:0,total_supply:0,price_usd:0,token_mc:1};
+    }
 }
 
 
