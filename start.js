@@ -215,7 +215,7 @@ const tokenTxPerMins = async(tokenAddress,pairAddress,date)=>{
                                 ]
                             ];
                             var no_social_link = "No link available"
-        return (tokenName && pairs?.pair_status) && bot.sendMessage(channelId,
+        return (tokenName && !pairs?.pair_status) && bot.sendMessage(channelId,
     `
 🚨 Alert: Sniper Action! 🚨
 

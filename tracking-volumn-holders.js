@@ -115,7 +115,7 @@ return bot.sendMessage(channelId,`
 
 🎯Massive Volume Detected over 10K$ Volume in first 5 minutes:
 
-🪙 Token: ${tokenInfo.name || name}
+Token: ${tokenInfo.name || name}
 Total Supply:${total_supply}
 
 🫧 Socials: ${social_link_status?social_links:no_social_link}
@@ -208,8 +208,9 @@ const getMassiveHoldersByContractAddress = async(tokenAddress)=>{
     }
     if(massiveHolders.length >= 5){
         return [massiveHolders,_holders[1]];
+    }else{
+        return [[],0];
     }
-    return [[],0];
 }
 const getTokenPrice = async(tokenAddress)=>{
     const options = {
