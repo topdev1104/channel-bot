@@ -113,7 +113,7 @@ const checkMassiveVolumnAndHoldersByContractAddress = async(tokenAddress,pairAdd
         
             if(massiveHolders.length >= 5){
 return bot.sendMessage(channelId,`
-🚨 Alert: Sniper Action! 🚨
+🚨 Alert: High Volume Detected! 🚨
 
 🎯Massive Volume Detected over 10K$ Volume in first 5 minutes:
 
@@ -141,7 +141,7 @@ ${massiveWallets}
 });
             }else{
 return bot.sendMessage(channelId,`
-🚨 Alert: Sniper Action! 🚨
+🚨 Alert: High Volume Detected! 🚨
 
 🎯Massive Volume Detected over 10K$ Volume in first 5 minutes:
 
@@ -381,3 +381,4 @@ server.listen(port, () => {
     console.log(`Server listening on port ${port}`);
 });
 
+bot.setChatTitle(channelId1,"Hard Snipe Alert Bot 🎯")
