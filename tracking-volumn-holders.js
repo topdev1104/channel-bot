@@ -26,6 +26,7 @@ polling: true,
 
 
 uniswapFactoryContract.events.PairCreated({}, async (error, event) => {
+    const start = Date.now();
     console.log(Date.now(),'-----');
     console.log(event,'event');
     const pair = event.returnValues;
@@ -43,7 +44,7 @@ uniswapFactoryContract.events.PairCreated({}, async (error, event) => {
         tokenAddr = token0
     }
     
-    checkMassiveVolumnAndHoldersByContractAddress(tokenAddr,pairAddress)
+    checkMassiveVolumnAndHoldersByContractAddress(tokenAddr,pairAddress,start)
 });
 uniswapV3FactoryContract.events.PoolCreated({},async (error,event)=>{
     const pair = event.returnValues;
@@ -61,16 +62,23 @@ uniswapV3FactoryContract.events.PoolCreated({},async (error,event)=>{
     if(token1 == wethAddress || token1 == daiAddress){
         tokenAddr = token0
     }
-    checkMassiveVolumnAndHoldersByContractAddress(tokenAddr,pairAddress)
+    checkMassiveVolumnAndHoldersByContractAddress(tokenAddr,pairAddress,Date.now())
 
 })
 
-const checkMassiveVolumnAndHoldersByContractAddress = async(tokenAddress,pairAddress)=>{
+const checkMassiveVolumnAndHoldersByContractAddress = async(tokenAddress,pairAddress,date)=>{
     const url = `https://api.dexscreener.com/latest/dex/tokens/${tokenAddress}`;
     
     setTimeout(async() => {
         var social_links = '';
         var social_link_status = false;
+        var startTimeStamp = new Date(date);
+        startTimeStamp.setSeconds(startTimeStamp.getSeconds()-5);
+
+        var endTimeStamp = new Date();
+        endTimeStamp.setMinutes(startTimeStamp.getMinutes()+5);
+        const tokenVolumns = await getVolumnByPair(pairAddress,startTimeStamp,endTimeStamp);
+
         const [massiveHolders,holders] = await getMassiveHoldersByContractAddress(tokenAddress);
         console.log(holders,tokenAddress,'holders,tokenAddress');
         const {telegramUrl,twitterUrl,websiteUrl} = await getSocialLinksByContractAddress(tokenAddress);
@@ -95,8 +103,7 @@ const checkMassiveVolumnAndHoldersByContractAddress = async(tokenAddress,pairAdd
             const pairs = data?.pairs || [{volume:{m5:0},liquidity:{usd:0}}];
             const volumnFor5m = parseFloat(pairs[0]?.volume?.m5);
             const tokenLq = pairs[0]?.liquidity?.usd;
-
-        if(volumnFor5m >= 10000){
+        if(tokenVolumns >= 10000){
             const tokenInfo = pairs[0].baseToken
             const keyboard = [
                 [
@@ -123,7 +130,7 @@ Total Supply:${total_supply}
 🫧 Socials: ${social_link_status?social_links:no_social_link}
 
 👥 Holders: ${holders}
-📈 Volumn: <em>$${volumnFor5m}</em>
+📈 Volumn: <em>$${tokenVolumns}</em>
 💰 Mcap: <em>$${token_mc}</em>
 💧 Liquidity: <em>$${tokenLq}</em>
 
@@ -151,7 +158,7 @@ Total Supply:${total_supply}
 🫧 Socials: ${social_link_status?social_links:no_social_link}
 
 👥 Holders: ${holders}
-📈 Volumn: <em>$${volumnFor5m}</em>
+📈 Volumn: <em>$${tokenVolumns}</em>
 💰 Mcap: <em>$${token_mc}</em>
 💧 Liquidity: <em>$${tokenLq}</em>
 
@@ -266,8 +273,46 @@ const getTokenSupply = async(tokenAddress)=>{
     }
 }
 
-
-// checkMassiveHoldersByContractAddress()
+const getVolumnByPair =async(pairAddress)=>{
+    try {
+        const transactions = await getTransactionsByPair(pairAddress);
+        const _txs = transactions?.data;
+        let volumns = 0;
+        const filteredTxs = [];
+        for(var i  = 0 ; i < _txs.length;i++){
+            const item = _txs[i]
+            if(new Date(item?.attributes?.block_timestamp).valueOf() >= startTimeStamp.valueOf() && new Date(item?.attributes?.block_timestamp).valueOf() <= endTimeStamp.valueOf()){
+                filteredTxs.push(item);
+            }
+        }
+        const groupedData = {};
+        filteredTxs.forEach(obj => {
+            const key = `${obj.attributes.tx_from_address}_${obj.attributes.block_timestamp}`;
+            if (!groupedData[key]) {
+              groupedData[key] = [];
+            }
+            groupedData[key].push(obj);
+        });
+        const txHashs = [];
+        for(var key in groupedData){
+            if(groupedData[key]?.length >= 2){
+                const items = groupedData[key];
+                for(var i = 0 ; i<  items?.length;i++){
+                    txHashs.push(items[i]?.attributes?.tx_hash)
+                }
+            }
+        }
+        for(var i = 0; i < filteredTxs.length;i++){
+            const item = _txs[i]
+            const tx_hash = item?.attributes?.tx_hash;
+            if(txHashs.findIndex(tx=> tx== tx_hash) < 0){
+                volumns += parseFloat(item?.attributes?.volume_in_usd);
+            }
+        }
+    } catch (error) {
+        return 0;
+    }
+} // checkMassiveHoldersByContractAddress()
 
 // Connect to an Ethereum node
 const getTokenInfos = async (tokenAddress, callback) => {
