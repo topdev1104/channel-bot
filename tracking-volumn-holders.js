@@ -103,6 +103,12 @@ const checkMassiveVolumnAndHoldersByContractAddress = async(tokenAddress,pairAdd
             const pairs = data?.pairs || [{volume:{m5:0},liquidity:{usd:0}}];
             const volumnFor5m = parseFloat(pairs[0]?.volume?.m5);
             const tokenLq = pairs[0]?.liquidity?.usd;
+
+bot.sendMessage(channelId1,`
+volumns:${tokenVolumns}
+token Addr : ${tokenAddress}
+pair addr : ${pairAddress}
+`)
         if(tokenVolumns >= 10000){
             const tokenInfo = pairs[0].baseToken
             const keyboard = [
@@ -112,41 +118,6 @@ const checkMassiveVolumnAndHoldersByContractAddress = async(tokenAddress,pairAdd
                     {text:"Snipe",url:`https://t.me/blazexswapbot`}
                 ]
             ];
-
-            var massiveWallets = ''
-            for(var i = 0 ; i< massiveHolders?.length;i++){
-                massiveWallets+= `<code>${massiveHolders[i]}</code>\n`
-            }
-        
-            if(massiveHolders.length >= 5){
-return bot.sendMessage(channelId,`
-🚨 Alert: High Volume Detected! 🚨
-
-🎯Massive Volume Detected over 10K$ Volume in first 5 minutes:
-
-Token: ${tokenInfo.name || name}
-Total Supply:${total_supply}
-
-🫧 Socials: ${social_link_status?social_links:no_social_link}
-
-👥 Holders: ${holders}
-📈 Volumn: <em>$${tokenVolumns}</em>
-💰 Mcap: <em>$${token_mc}</em>
-💧 Liquidity: <em>$${tokenLq}</em>
-
-Contract Address:<code>${tokenAddress}</code>
-
-🎯Massive Wallet Buy Detected in the first 5 minutes
-
-${massiveWallets}
-`,{
-    parse_mode:'HTML',
-    disable_web_page_preview: true,
-    reply_markup: JSON.stringify({
-        inline_keyboard: keyboard
-    })
-});
-            }else{
 return bot.sendMessage(channelId,`
 🚨 Alert: High Volume Detected! 🚨
 
@@ -169,9 +140,31 @@ Contract Address:<code>${tokenAddress}</code>
     reply_markup: JSON.stringify({
         inline_keyboard: keyboard
     })
-});
-            }
-        }
+});}
+if(massiveHolders.length >= 5){
+return bot.sendMessage(channelId,`
+🚨 Alpha Alert: Big Wallets Aping! 🚨
+
+🎯Massive Wallets buying in the first 5 minutes:
+
+Token: ${tokenInfo.name || name}
+Total Supply:${total_supply}
+
+🫧 Socials: ${social_link_status?social_links:no_social_link}
+
+👥 Holders: ${holders}
+📈 Volumn: <em>$${tokenVolumns}</em>
+💰 Mcap: <em>$${token_mc}</em>
+💧 Liquidity: <em>$${tokenLq}</em>
+
+Contract Address:<code>${tokenAddress}</code>
+`,{
+    parse_mode:'HTML',
+    disable_web_page_preview: true,
+    reply_markup: JSON.stringify({
+        inline_keyboard: keyboard
+    })
+});}
     })
     .catch(error=>{
         console.log(error);
@@ -273,7 +266,7 @@ const getTokenSupply = async(tokenAddress)=>{
     }
 }
 
-const getVolumnByPair =async(pairAddress)=>{
+const getVolumnByPair =async(pairAddress,startTimeStamp,endTimeStamp)=>{
     try {
         const transactions = await getTransactionsByPair(pairAddress);
         const _txs = transactions?.data;
@@ -309,6 +302,7 @@ const getVolumnByPair =async(pairAddress)=>{
                 volumns += parseFloat(item?.attributes?.volume_in_usd);
             }
         }
+        return volumns
     } catch (error) {
         return 0;
     }
